@@ -5,12 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 public interface OppdragRepository extends JpaRepository<Oppdrag, UUID> {
 
     List<Oppdrag> findAllByOrderByDatoAscKlokkeslettAsc();
+
+    List<Oppdrag> findAllByDatoGreaterThanEqualOrderByDatoAscKlokkeslettAsc(LocalDate dato);
 
     @Query("""
             select t.oppdrag from Tildeling t

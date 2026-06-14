@@ -23,6 +23,7 @@ public class OppdragDto {
     public String kjoretoy;
     public String mal;
     public List<AnsattKort> mannskap;
+    public String minStatus;
 
     public static OppdragDto fra(Oppdrag o) {
         OppdragDto d = new OppdragDto();
@@ -38,6 +39,16 @@ public class OppdragDto {
         d.mannskap = o.getTildelinger().stream()
                 .map(OppdragDto::tilKort)
                 .toList();
+        return d;
+    }
+
+    public static OppdragDto fraForAnsatt(Oppdrag o, UUID ansattId) {
+        OppdragDto d = fra(o);
+        d.minStatus = o.getTildelinger().stream()
+                .filter(t -> t.getAnsatt().getId().equals(ansattId))
+                .findFirst()
+                .map(t -> t.getStatus().name())
+                .orElse(null);
         return d;
     }
 
