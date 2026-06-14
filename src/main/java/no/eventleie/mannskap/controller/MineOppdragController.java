@@ -52,7 +52,7 @@ public class MineOppdragController {
                 .map(t -> {
                     t.setStatus(status);
                     tildelingRepo.save(t);
-                    return ResponseEntity.<Void>noContent().build();
+                    return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

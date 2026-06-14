@@ -52,6 +52,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .httpBasic(basic -> {})
                 .headers(h -> h.frameOptions(f -> f.disable()));
-        return http;
+        return http.build();
     }
 }
