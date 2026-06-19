@@ -113,7 +113,7 @@ function Header({ bruker, onLoggUt, onBrukernavnEndret }) {
                 {bruker.brukernavn}
               </div>
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                {bruker.rolle === "ADMIN" ? "Administrator" : "Ansatt"}
+                {bruker.rolle === "SJEF" ? "Sjef" : bruker.rolle === "UTVIKLER" ? "Utvikler" : bruker.rolle === "ADMIN" ? "Administrator" : "Ansatt"}
               </div>
             </div>
             <span style={{ fontSize: 10, color: "var(--text-faint)", marginLeft: 2 }}>▼</span>
@@ -259,7 +259,7 @@ function InnstillingerModal({ bruker, onLukk, onBrukernavnEndret }) {
         <div style={{ padding: 20 }}>
           {fane === "passord" ? (
             <form onSubmit={byttPassord}>
-              {bruker.rolle !== "ADMIN" && (
+              {!["ADMIN", "SJEF", "UTVIKLER"].includes(bruker.rolle) && (
                 <Felt label="Nåværende passord">
                   <input type="password" value={gammelt} onChange={(e) => setGammelt(e.target.value)} placeholder="••••••••" />
                 </Felt>
