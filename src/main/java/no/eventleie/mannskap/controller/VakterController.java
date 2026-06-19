@@ -49,7 +49,7 @@ public class VakterController {
 
         return oppdragRepo.findById(oppdragId)
                 .map(o -> {
-                    tildelingRepo.save(new Tildeling(meg, o));
+                    tildelingRepo.save(new Tildeling(meg, o, true));
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());

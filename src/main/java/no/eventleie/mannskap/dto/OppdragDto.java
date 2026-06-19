@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class OppdragDto {
 
-    public record AnsattKort(UUID id, String navn, String status) {
+    public record AnsattKort(UUID id, String navn, String status, String fravaerBegrunnelse) {
     }
 
     public UUID id;
@@ -26,6 +26,7 @@ public class OppdragDto {
     public String mal;
     public List<AnsattKort> mannskap;
     public String minStatus;
+    public boolean sett;
 
     public static OppdragDto fra(Oppdrag o) {
         OppdragDto d = new OppdragDto();
@@ -48,11 +49,13 @@ public class OppdragDto {
 
     public static OppdragDto fraForAnsatt(Oppdrag o, UUID ansattId) {
         OppdragDto d = fra(o);
-        d.minStatus = o.getTildelinger().stream()
+        o.getTildelinger().stream()
                 .filter(t -> t.getAnsatt().getId().equals(ansattId))
                 .findFirst()
-                .map(t -> t.getStatus().name())
-                .orElse(null);
+                .ifPresent(t -> {
+                    d.minStatus = t.getStatus().name();
+                    d.sett = t.isSett();
+                });
         return d;
     }
 
@@ -60,6 +63,7 @@ public class OppdragDto {
         return new AnsattKort(
                 t.getAnsatt().getId(),
                 t.getAnsatt().getNavn(),
-                t.getStatus().name());
+                t.getStatus().name(),
+                t.getFravaerBegrunnelse());
     }
 }

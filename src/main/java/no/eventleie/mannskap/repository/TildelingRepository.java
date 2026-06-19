@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface TildelingRepository extends JpaRepository<Tildeling, UUID> {
     Optional<Tildeling> findByAnsattIdAndOppdragId(UUID ansattId, UUID oppdragId);
     void deleteAllByAnsattId(UUID ansattId);
+    long countByAnsattIdAndSettFalse(UUID ansattId);
+    List<Tildeling> findByAnsattIdAndSettFalse(UUID ansattId);
 }

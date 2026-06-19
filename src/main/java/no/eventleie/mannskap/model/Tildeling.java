@@ -22,14 +22,20 @@ public class Tildeling {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TildelingStatus status = TildelingStatus.SATT_OPP;
+    private TildelingStatus status = TildelingStatus.BEKREFTET;
+
+    @Column(nullable = false)
+    private boolean sett = false;
+
+    private String fravaerBegrunnelse;
 
     public Tildeling() {
     }
 
-    public Tildeling(Ansatt ansatt, Oppdrag oppdrag) {
+    public Tildeling(Ansatt ansatt, Oppdrag oppdrag, boolean sett) {
         this.ansatt = ansatt;
         this.oppdrag = oppdrag;
+        this.sett = sett;
     }
 
     public UUID getId() {
@@ -58,5 +64,21 @@ public class Tildeling {
 
     public void setStatus(TildelingStatus status) {
         this.status = status;
+    }
+
+    public boolean isSett() {
+        return sett;
+    }
+
+    public void setSett(boolean sett) {
+        this.sett = sett;
+    }
+
+    public String getFravaerBegrunnelse() {
+        return fravaerBegrunnelse;
+    }
+
+    public void setFravaerBegrunnelse(String fravaerBegrunnelse) {
+        this.fravaerBegrunnelse = fravaerBegrunnelse;
     }
 }

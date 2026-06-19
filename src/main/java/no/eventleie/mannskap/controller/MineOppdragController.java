@@ -2,7 +2,6 @@ package no.eventleie.mannskap.controller;
 
 import no.eventleie.mannskap.dto.OppdragDto;
 import no.eventleie.mannskap.model.Ansatt;
-import no.eventleie.mannskap.model.Tildeling;
 import no.eventleie.mannskap.model.TildelingStatus;
 import no.eventleie.mannskap.repository.AnsattRepository;
 import no.eventleie.mannskap.repository.OppdragRepository;
@@ -12,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -33,25 +33,44 @@ public class MineOppdragController {
     public List<OppdragDto> mine(Authentication auth) {
         Ansatt meg = innloggetAnsatt(auth);
         return oppdragRepo.finnForAnsatt(meg.getId())
-                .stream().map(OppdragDto::fra).toList();
-    }
-
-    @PostMapping("/{oppdragId}/bekreft")
-    public ResponseEntity<Void> bekreft(@PathVariable UUID oppdragId, Authentication auth) {
-        return settStatus(oppdragId, auth, TildelingStatus.BEKREFTET);
+                .stream().map(o -> OppdragDto.fraForAnsatt(o, meg.getId())).toList();
     }
 
     @PostMapping("/{oppdragId}/fravaer")
-    public ResponseEntity<Void> fravaer(@PathVariable UUID oppdragId, Authentication auth) {
-        return settStatus(oppdragId, auth, TildelingStatus.FRAVAER);
-    }
-
-    private ResponseEntity<Void> settStatus(UUID oppdragId, Authentication auth, TildelingStatus status) {
+    public ResponseEntity<Void> fravaer(
+            @PathVariable UUID oppdragId,
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
         Ansatt meg = innloggetAnsatt(auth);
         return tildelingRepo.findByAnsattIdAndOppdragId(meg.getId(), oppdragId)
                 .map(t -> {
-                    t.setStatus(status);
+                    t.setStatus(TildelingStatus.FRAVAER);
+                    t.setFravaerBegrunnelse(body.getOrDefault("begrunnelse", ""));
+                    t.setSett(true);
                     tildelingRepo.save(t);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{oppdragId}/kvitter")
+    public ResponseEntity<Void> kvitter(@PathVariable UUID oppdragId, Authentication auth) {
+        Ansatt meg = innloggetAnsatt(auth);
+        return tildelingRepo.findByAnsattIdAndOppdragId(meg.getId(), oppdragId)
+                .map(t -> {
+                    t.setSett(true);
+                    tildelingRepo.save(t);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{oppdragId}")
+    public ResponseEntity<Void> trekkDeg(@PathVariable UUID oppdragId, Authentication auth) {
+        Ansatt meg = innloggetAnsatt(auth);
+        return tildelingRepo.findByAnsattIdAndOppdragId(meg.getId(), oppdragId)
+                .map(t -> {
+                    tildelingRepo.delete(t);
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());

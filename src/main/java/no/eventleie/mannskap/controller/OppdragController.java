@@ -93,7 +93,7 @@ public class OppdragController {
                     .anyMatch(t -> t.getAnsatt().getId().equals(aid));
             if (!finnes) {
                 ansattRepo.findById(aid).ifPresent(a ->
-                        o.getTildelinger().add(new Tildeling(a, o)));
+                        o.getTildelinger().add(new Tildeling(a, o, false)));
             }
         }
     }
