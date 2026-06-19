@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
-export default function AnsattVisning({ brukernavn, onKvitter }) {
+export default function AnsattVisning({ brukernavn }) {
   const [vakter, setVakter] = useState([]);
   const [laster, setLaster] = useState(true);
   const [feil, setFeil] = useState(null);
@@ -59,7 +59,7 @@ export default function AnsattVisning({ brukernavn, onKvitter }) {
               </div>
               <button
                 className="primary"
-                onClick={() => handling(o.id, async () => { await api.kvitter(o.id); onKvitter?.(); })}
+                onClick={() => handling(o.id, () => api.kvitter(o.id))}
                 disabled={lasterHandling[o.id]}
                 style={{ fontSize: 12, padding: "5px 12px" }}
               >

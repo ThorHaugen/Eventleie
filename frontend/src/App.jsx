@@ -39,7 +39,7 @@ export default function App() {
       <Header bruker={bruker} onLoggUt={ut} onBrukernavnEndret={(nyttNavn) => setBruker({ ...bruker, brukernavn: nyttNavn })} />
       {erAdmin
         ? <AdminDashboard bruker={bruker} />
-        : <AnsattVisning brukernavn={bruker.brukernavn} onKvitter={oppdaterVarsler} />}
+        : <AnsattVisning brukernavn={bruker.brukernavn} />}
     </div>
   );
 }
@@ -56,7 +56,11 @@ function Header({ bruker, onLoggUt, onBrukernavnEndret }) {
     }
   }
 
-  useEffect(() => { oppdaterVarsler(); }, [bruker.rolle]);
+  useEffect(() => {
+    oppdaterVarsler();
+    const t = setInterval(oppdaterVarsler, 30000);
+    return () => clearInterval(t);
+  }, [bruker.rolle]);
 
   useEffect(() => {
     function klikk(e) {
