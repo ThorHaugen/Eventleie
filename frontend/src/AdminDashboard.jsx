@@ -3,109 +3,175 @@ import { api } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
 export default function AdminDashboard() {
-  const [oppdrag, setOppdrag] = useState([]);
-  const [valgt, setValgt] = useState(null);
-  const [laster, setLaster] = useState(true);
-  const [feil, setFeil] = useState(null);
-
-  async function last() {
-    setLaster(true);
-    try {
-      const data = await api.alleOppdrag();
-      setOppdrag(data);
-      setFeil(null);
-    } catch {
-      setFeil("Klarte ikke hente oppdrag.");
-    } finally {
-      setLaster(false);
-    }
-  }
-
-  useEffect(() => {
-    last();
-  }, []);
-
-  if (laster) return <p className="muted" style={{ padding: 24 }}>Laster oppdrag...</p>;
-  if (feil) return <p style={{ padding: 24, color: "#a32d2d" }}>{feil}</p>;
-
+  const [fane, setFane] = useState("oppdrag");
   return (
-    <div style={{ display: "flex", gap: 24, alignItems: "flex-start", padding: 24, maxWidth: 1000, margin: "0 auto", flexWrap: "wrap" }}>
-      <div style={{ flex: 1, minWidth: 320 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>Alle oppdrag</h2>
-          <button onClick={() => setValgt({ ny: true, type: "MONTERING", ansattIder: [] })}>+ Nytt oppdrag</button>
-        </div>
-
-        {oppdrag.length === 0 && <p className="muted tiny">Ingen oppdrag enna. Lag det forste.</p>}
-
-        {oppdrag.map((o) => (
-          <div
-            key={o.id}
-            onClick={() => setValgt(o)}
-            style={{
-              background: "var(--surface)",
-              border: valgt && valgt.id === o.id ? "2px solid var(--info)" : "0.5px solid var(--border)",
-              borderRadius: "var(--radius-lg)",
-              padding: "12px 14px",
-              marginBottom: 8,
-              cursor: "pointer",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontWeight: 500 }}>{o.kunde}</span>
-              <TypePille type={o.type} />
-            </div>
-            <div className="tiny muted" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <span>{visDato(o.dato)}</span>
-              <span>{visTid(o.klokkeslett)}</span>
-              {o.kjoretoy && <span>{o.kjoretoy}</span>}
-              <span style={{ marginLeft: "auto" }}>{o.mannskap.length} pa mannskap</span>
-            </div>
-          </div>
-        ))}
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 40px" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        <FaneKnapp aktiv={fane === "oppdrag"} onClick={() => setFane("oppdrag")}>Oppdrag</FaneKnapp>
+        <FaneKnapp aktiv={fane === "ansatte"} onClick={() => setFane("ansatte")}>Ansatte</FaneKnapp>
       </div>
-
-      {valgt && (
-        <Editor
-          key={valgt.id || "ny"}
-          oppdrag={valgt}
-          onLagret={() => { setValgt(null); last(); }}
-          onAvbryt={() => setValgt(null)}
-        />
-      )}
+      {fane === "oppdrag" ? <OppdragPanel /> : <AnsattPanel />}
     </div>
   );
 }
 
-function Editor({ oppdrag, onLagret, onAvbryt }) {
+function FaneKnapp({ aktiv, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "8px 20px",
+        borderRadius: 20,
+        border: "none",
+        background: aktiv ? "var(--info)" : "var(--surface)",
+        color: aktiv ? "#fff" : "var(--text-muted)",
+        fontWeight: aktiv ? 600 : 400,
+        fontSize: 14,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── OPPDRAG ────────────────────────────────────────────────────────────────
+
+function OppdragPanel() {
+  const [oppdrag, setOppdrag] = useState([]);
+  const [ansatte, setAnsatte] = useState([]);
+  const [valgt, setValgt] = useState(null);
+  const [laster, setLaster] = useState(true);
+
+  async function last() {
+    const [o, a] = await Promise.all([api.alleOppdrag(), api.alleAnsatte()]);
+    setOppdrag(o);
+    setAnsatte(a);
+    setLaster(false);
+  }
+
+  useEffect(() => { last(); }, []);
+
+  function velg(o) { setValgt(o); window.scrollTo({ top: 0, behavior: "smooth" }); }
+
+  if (laster) return <p className="muted tiny">Laster...</p>;
+
+  if (valgt) {
+    return (
+      <OppdragEditor
+        oppdrag={valgt}
+        ansatte={ansatte}
+        onFerdig={() => { setValgt(null); last(); }}
+        onAvbryt={() => setValgt(null)}
+      />
+    );
+  }
+
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Alle oppdrag</h2>
+        <button
+          className="primary"
+          onClick={() => velg({ ny: true, type: "MONTERING", mannskap: [] })}
+          style={{ fontSize: 14, padding: "8px 16px" }}
+        >
+          + Nytt
+        </button>
+      </div>
+
+      {oppdrag.length === 0 && <p className="muted tiny">Ingen oppdrag enda.</p>}
+
+      {oppdrag.map((o) => (
+        <div
+          key={o.id}
+          onClick={() => velg(o)}
+          style={{
+            background: "var(--surface)",
+            border: "0.5px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "14px 16px",
+            marginBottom: 10,
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontWeight: 600 }}>{o.kunde}</span>
+            <TypePille type={o.type} />
+          </div>
+          <div className="tiny muted" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: o.mannskap.length ? 8 : 0 }}>
+            <span>{visDato(o.dato)}</span>
+            {o.klokkeslett && <span>{visTid(o.klokkeslett)}</span>}
+            {o.kjoretoy && <span>{o.kjoretoy}</span>}
+          </div>
+          {o.mannskap.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {o.mannskap.map((m) => (
+                <span key={m.id} style={{
+                  fontSize: 11,
+                  padding: "2px 8px",
+                  borderRadius: 20,
+                  background: statusFarge(m.status).bg,
+                  color: statusFarge(m.status).fg,
+                }}>
+                  {m.navn}
+                </span>
+              ))}
+            </div>
+          )}
+          {o.mannskap.length === 0 && (
+            <span className="tiny muted">Ingen påmeldte</span>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function statusFarge(status) {
+  if (status === "BEKREFTET") return { bg: "var(--teal-bg)", fg: "var(--teal)" };
+  if (status === "FRAVAER") return { bg: "var(--warning-bg)", fg: "var(--warning)" };
+  return { bg: "var(--border)", fg: "var(--text-muted)" };
+}
+
+function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
   const [kunde, setKunde] = useState(oppdrag.kunde || "");
   const [dato, setDato] = useState(oppdrag.dato || "");
   const [klokkeslett, setKlokkeslett] = useState(oppdrag.klokkeslett ? oppdrag.klokkeslett.slice(0, 5) : "");
   const [type, setType] = useState(oppdrag.type || "MONTERING");
   const [sted, setSted] = useState(oppdrag.sted || "");
   const [notat, setNotat] = useState(oppdrag.notat || "");
+  const [mannskap, setMannskap] = useState(oppdrag.mannskap || []);
+  const [leggTilId, setLeggTilId] = useState("");
   const [lagrer, setLagrer] = useState(false);
 
+  const ikkeValgte = ansatte.filter((a) => !mannskap.find((m) => m.id === a.id));
+
+  function leggTil() {
+    const a = ansatte.find((a) => a.id === leggTilId);
+    if (!a) return;
+    setMannskap([...mannskap, { id: a.id, navn: a.navn, status: "SATT_OPP" }]);
+    setLeggTilId("");
+  }
+
+  function fjern(id) {
+    setMannskap(mannskap.filter((m) => m.id !== id));
+  }
+
   async function lagre() {
+    if (!kunde) return alert("Skriv inn kunde.");
     setLagrer(true);
     const data = {
-      kunde,
-      dato: dato || null,
+      kunde, dato: dato || null,
       klokkeslett: klokkeslett ? klokkeslett + ":00" : null,
-      type,
-      sted: sted || null,
-      notat: notat || null,
-      ansattIder: oppdrag.mannskap ? oppdrag.mannskap.map((m) => m.id) : [],
+      type, sted: sted || null, notat: notat || null,
+      ansattIder: mannskap.map((m) => m.id),
     };
     try {
-      if (oppdrag.ny) {
-        await api.opprettOppdrag(data);
-      } else {
-        await api.oppdaterOppdrag(oppdrag.id, data);
-      }
-      onLagret();
+      if (oppdrag.ny) await api.opprettOppdrag(data);
+      else await api.oppdaterOppdrag(oppdrag.id, data);
+      onFerdig();
     } catch {
-      alert("Klarte ikke lagre. Sjekk at backend kjorer.");
+      alert("Klarte ikke lagre.");
       setLagrer(false);
     }
   }
@@ -113,16 +179,22 @@ function Editor({ oppdrag, onLagret, onAvbryt }) {
   async function slett() {
     if (!confirm("Slette dette oppdraget?")) return;
     await api.slettOppdrag(oppdrag.id);
-    onLagret();
+    onFerdig();
   }
 
   return (
-    <div style={{ width: 320, background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "1.25rem" }}>
-      <h3 style={{ fontSize: 16, fontWeight: 500, margin: "0 0 14px" }}>
-        {oppdrag.ny ? "Nytt oppdrag" : "Rediger oppdrag"}
-      </h3>
+    <div>
+      <button onClick={onAvbryt} className="tiny muted" style={{ background: "none", border: "none", padding: "0 0 12px", cursor: "pointer", color: "var(--text-muted)" }}>
+        ← Tilbake
+      </button>
 
-      <Felt label="Kunde"><input value={kunde} onChange={(e) => setKunde(e.target.value)} /></Felt>
+      <h2 style={{ fontSize: 17, fontWeight: 600, margin: "0 0 16px" }}>
+        {oppdrag.ny ? "Nytt oppdrag" : "Rediger oppdrag"}
+      </h2>
+
+      <Felt label="Kunde">
+        <input value={kunde} onChange={(e) => setKunde(e.target.value)} placeholder="Kundenavn" autoFocus />
+      </Felt>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Felt label="Dato"><input type="date" value={dato} onChange={(e) => setDato(e.target.value)} /></Felt>
@@ -138,17 +210,139 @@ function Editor({ oppdrag, onLagret, onAvbryt }) {
         </select>
       </Felt>
 
-      <Felt label="Sted"><input value={sted} onChange={(e) => setSted(e.target.value)} /></Felt>
-      <Felt label="Notat"><textarea rows={3} value={notat} onChange={(e) => setNotat(e.target.value)} /></Felt>
+      <Felt label="Sted"><input value={sted} onChange={(e) => setSted(e.target.value)} placeholder="Valgfritt" /></Felt>
+      <Felt label="Notat"><textarea rows={2} value={notat} onChange={(e) => setNotat(e.target.value)} placeholder="Valgfritt" /></Felt>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button className="primary" onClick={lagre} disabled={lagrer} style={{ flex: 1 }}>
+      <div style={{ margin: "16px 0 8px", fontWeight: 600, fontSize: 14 }}>Mannskap</div>
+
+      {mannskap.length === 0 && <p className="tiny muted" style={{ marginBottom: 8 }}>Ingen påmeldte enda.</p>}
+
+      {mannskap.map((m) => (
+        <div key={m.id} style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "8px 12px", marginBottom: 6,
+          background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)",
+        }}>
+          <div>
+            <span style={{ fontSize: 14 }}>{m.navn}</span>
+            <span className="tiny muted" style={{ marginLeft: 8 }}>
+              {m.status === "BEKREFTET" ? "✓ Bekreftet" : m.status === "FRAVAER" ? "Fravær" : "Påmeldt"}
+            </span>
+          </div>
+          <button onClick={() => fjern(m.id)} style={{ color: "#a32d2d", fontSize: 12, padding: "4px 10px" }}>
+            Fjern
+          </button>
+        </div>
+      ))}
+
+      {ikkeValgte.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <select value={leggTilId} onChange={(e) => setLeggTilId(e.target.value)} style={{ flex: 1 }}>
+            <option value="">Legg til ansatt...</option>
+            {ikkeValgte.map((a) => (
+              <option key={a.id} value={a.id}>{a.navn}</option>
+            ))}
+          </select>
+          <button onClick={leggTil} disabled={!leggTilId} className="primary" style={{ whiteSpace: "nowrap" }}>
+            + Legg til
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+        <button className="primary" onClick={lagre} disabled={lagrer} style={{ flex: 1, padding: "10px" }}>
           {lagrer ? "Lagrer..." : "Lagre"}
         </button>
-        <button onClick={onAvbryt}>Avbryt</button>
-        {!oppdrag.ny && <button onClick={slett} style={{ color: "#a32d2d" }}>Slett</button>}
+        {!oppdrag.ny && (
+          <button onClick={slett} style={{ color: "#a32d2d", padding: "10px 16px" }}>Slett</button>
+        )}
       </div>
     </div>
+  );
+}
+
+// ─── ANSATTE ────────────────────────────────────────────────────────────────
+
+function AnsattPanel() {
+  const [ansatte, setAnsatte] = useState([]);
+  const [laster, setLaster] = useState(true);
+  const [visSkjema, setVisSkjema] = useState(false);
+  const [navn, setNavn] = useState("");
+  const [brukernavn, setBrukernavn] = useState("");
+  const [passord, setPassord] = useState("");
+  const [rolle, setRolle] = useState("ANSATT");
+  const [lagrer, setLagrer] = useState(false);
+  const [feil, setFeil] = useState(null);
+
+  async function last() {
+    setAnsatte(await api.alleAnsatte());
+    setLaster(false);
+  }
+
+  useEffect(() => { last(); }, []);
+
+  async function opprett(e) {
+    e.preventDefault();
+    if (!navn || !brukernavn || !passord) return;
+    setLagrer(true);
+    setFeil(null);
+    try {
+      await api.opprettAnsatt({ navn, brukernavn, passord, rolle });
+      setNavn(""); setBrukernavn(""); setPassord(""); setRolle("ANSATT");
+      setVisSkjema(false);
+      last();
+    } catch {
+      setFeil("Klarte ikke opprette ansatt. Brukernavn kan allerede være i bruk.");
+    } finally {
+      setLagrer(false);
+    }
+  }
+
+  if (laster) return <p className="muted tiny">Laster...</p>;
+
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Ansatte</h2>
+        <button className="primary" onClick={() => setVisSkjema(!visSkjema)} style={{ fontSize: 14, padding: "8px 16px" }}>
+          {visSkjema ? "Avbryt" : "+ Ny ansatt"}
+        </button>
+      </div>
+
+      {visSkjema && (
+        <form onSubmit={opprett} style={{
+          background: "var(--surface)", border: "0.5px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: "16px", marginBottom: 16,
+        }}>
+          <Felt label="Navn"><input value={navn} onChange={(e) => setNavn(e.target.value)} placeholder="Fullt navn" autoFocus /></Felt>
+          <Felt label="Brukernavn"><input value={brukernavn} onChange={(e) => setBrukernavn(e.target.value)} placeholder="f.eks. magne" /></Felt>
+          <Felt label="Passord"><input type="password" value={passord} onChange={(e) => setPassord(e.target.value)} placeholder="Midlertidig passord" /></Felt>
+          <Felt label="Rolle">
+            <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
+              <option value="ANSATT">Ansatt</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </Felt>
+          {feil && <p style={{ color: "#a32d2d", fontSize: 13, margin: "0 0 10px" }}>{feil}</p>}
+          <button type="submit" className="primary" disabled={lagrer} style={{ width: "100%", padding: 10 }}>
+            {lagrer ? "Oppretter..." : "Opprett ansatt"}
+          </button>
+        </form>
+      )}
+
+      {ansatte.map((a) => (
+        <div key={a.id} style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          background: "var(--surface)", border: "0.5px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: "12px 16px", marginBottom: 8,
+        }}>
+          <div>
+            <div style={{ fontWeight: 500 }}>{a.navn}</div>
+            <div className="tiny muted">{a.brukernavn} · {a.rolle === "ADMIN" ? "Admin" : "Ansatt"}</div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

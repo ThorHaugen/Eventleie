@@ -47,4 +47,8 @@ export const api = {
   alleVakter: () => kall("/api/vakter"),
   taVakt: (id) => kall(`/api/vakter/${id}/ta`, { method: "POST" }),
   trekkVakt: (id) => kall(`/api/vakter/${id}/ta`, { method: "DELETE" }),
+
+  alleAnsatte: () => kall("/api/ansatte"),
+  opprettAnsatt: (data) => kall("/api/ansatte", { method: "POST", body: JSON.stringify(data) }),
+  slettAnsatt: (id) => kall(`/api/ansatte/${id}`, { method: "DELETE" }),
 };
