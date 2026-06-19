@@ -221,10 +221,10 @@ function VaktKort({ o, laster, children }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
         <div>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{o.kunde}</div>
-          <div className="tiny muted" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 13, fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
             <span>{visDato(o.dato)}</span>
-            {o.klokkeslett && <span>· {visTid(o.klokkeslett)}</span>}
-            {o.sted && <span>· {o.sted}</span>}
+            {o.klokkeslett && <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>· {visTid(o.klokkeslett)}</span>}
+            {o.sted && <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>· {o.sted}</span>}
           </div>
         </div>
         <TypePille type={o.type} />
