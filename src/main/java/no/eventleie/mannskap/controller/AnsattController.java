@@ -3,8 +3,10 @@ package no.eventleie.mannskap.controller;
 import no.eventleie.mannskap.model.Ansatt;
 import no.eventleie.mannskap.model.Rolle;
 import no.eventleie.mannskap.repository.AnsattRepository;
+import no.eventleie.mannskap.repository.TildelingRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +18,12 @@ import java.util.UUID;
 public class AnsattController {
 
     private final AnsattRepository ansattRepo;
+    private final TildelingRepository tildelingRepo;
     private final PasswordEncoder passordKoder;
 
-    public AnsattController(AnsattRepository ansattRepo, PasswordEncoder passordKoder) {
+    public AnsattController(AnsattRepository ansattRepo, TildelingRepository tildelingRepo, PasswordEncoder passordKoder) {
         this.ansattRepo = ansattRepo;
+        this.tildelingRepo = tildelingRepo;
         this.passordKoder = passordKoder;
     }
 
@@ -54,9 +58,20 @@ public class AnsattController {
         return ResponseEntity.ok(Map.of("id", a.getId(), "navn", a.getNavn()));
     }
 
+    @PutMapping("/{id}/passord")
+    public ResponseEntity<?> settPassord(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        return ansattRepo.findById(id).map(a -> {
+            a.setPassordHash(passordKoder.encode(body.get("passord")));
+            ansattRepo.save(a);
+            return ResponseEntity.ok().build();
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> slett(@PathVariable UUID id) {
         if (!ansattRepo.existsById(id)) return ResponseEntity.notFound().build();
+        tildelingRepo.deleteAllByAnsattId(id);
         ansattRepo.deleteById(id);
         return ResponseEntity.noContent().build();
     }
