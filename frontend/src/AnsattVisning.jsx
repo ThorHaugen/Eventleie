@@ -1,20 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, loggUt } from "./api";
+import { api } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
-const STATUS_TEKST = {
-  SATT_OPP: "Påmeldt",
-  BEKREFTET: "Bekreftet",
-  FRAVAER: "Meldt fravær",
-};
-
-const STATUS_FARGE = {
-  SATT_OPP: { color: "var(--text-muted)" },
-  BEKREFTET: { color: "var(--teal)" },
-  FRAVAER: { color: "var(--warning)" },
-};
-
-export default function AnsattVisning({ brukernavn, ansattId }) {
+export default function AnsattVisning({ brukernavn }) {
   const [vakter, setVakter] = useState([]);
   const [laster, setLaster] = useState(true);
   const [feil, setFeil] = useState(null);
@@ -36,164 +24,140 @@ export default function AnsattVisning({ brukernavn, ansattId }) {
 
   async function handling(id, fn) {
     setLasterHandling((p) => ({ ...p, [id]: true }));
-    try {
-      await fn();
-      await last();
-    } finally {
-      setLasterHandling((p) => ({ ...p, [id]: false }));
-    }
+    try { await fn(); await last(); }
+    finally { setLasterHandling((p) => ({ ...p, [id]: false })); }
   }
 
+  const usette = vakter.filter((o) => o.minStatus != null && !o.sett);
   const mineVakter = vakter.filter((o) => o.minStatus != null);
   const ledigeVakter = vakter.filter((o) => o.minStatus == null);
 
-  if (laster) return <p className="muted" style={{ padding: 24 }}>Laster vakter...</p>;
-  if (feil) return <p style={{ padding: 24, color: "#a32d2d" }}>{feil}</p>;
+  if (laster) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, color: "var(--text-muted)", fontSize: 14 }}>Laster vakter...</div>;
+  if (feil) return <p style={{ padding: 24, color: "#e05555" }}>{feil}</p>;
 
   return (
-    <div style={{ maxWidth: 500, margin: "0 auto", padding: 24 }}>
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 48px" }}>
 
-      <PassordSeksjon />
-
-      <section style={{ marginBottom: 36 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px", letterSpacing: 0.3 }}>
-          Tilgjengelige vakter
-        </h2>
-        <p className="muted tiny" style={{ margin: "0 0 1rem" }}>
-          Trykk "Ta vakt" for å melde deg på
-        </p>
-
-        {ledigeVakter.length === 0 && (
-          <p className="muted tiny">Ingen ledige vakter akkurat nå.</p>
-        )}
-
-        {ledigeVakter.map((o) => {
-          const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
-          return (
-            <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
-              {erFull ? (
-                <span style={{
-                  flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600,
-                  color: "var(--warning)", background: "var(--warning-bg)",
-                  borderRadius: "var(--radius)", padding: "8px 14px",
-                }}>
-                  Fullt
-                </span>
-              ) : (
-                <button
-                  className="primary"
-                  disabled={lasterHandling[o.id]}
-                  onClick={() => handling(o.id, () => api.taVakt(o.id))}
-                  style={{ flex: 1 }}
-                >
-                  {lasterHandling[o.id] ? "..." : "Ta vakt"}
-                </button>
-              )}
-            </VaktKort>
-          );
-        })}
-      </section>
-
-      <section>
-        <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px", letterSpacing: 0.3 }}>
-          Mine vakter
-        </h2>
-        <p className="muted tiny" style={{ margin: "0 0 1rem" }}>
-          {mineVakter.length} {mineVakter.length === 1 ? "vakt" : "vakter"}
-        </p>
-
-        {mineVakter.length === 0 && (
-          <p className="muted tiny">Du har ikke tatt noen vakter enda.</p>
-        )}
-
-        {mineVakter.map((o) => (
-          <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
-            <div style={{ display: "flex", gap: 8, flex: 1 }}>
-              {o.minStatus !== "BEKREFTET" && (
-                <button
-                  onClick={() => handling(o.id, () => api.bekreft(o.id))}
-                  disabled={lasterHandling[o.id]}
-                  style={{ flex: 1 }}
-                >
-                  Bekreft
-                </button>
-              )}
-              {o.minStatus !== "FRAVAER" && (
-                <button
-                  onClick={() => {
-                    if (!confirm("Melde fravær på denne vakta?")) return;
-                    handling(o.id, () => api.fravaer(o.id));
-                  }}
-                  disabled={lasterHandling[o.id]}
-                  style={{ flex: 1 }}
-                >
-                  Meld fravær
-                </button>
-              )}
+      {usette.length > 0 && (
+        <div style={{
+          background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.4)",
+          borderRadius: "var(--radius-lg)", padding: "14px 16px", marginBottom: 24,
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#e05555", marginBottom: 8 }}>
+            🔴 Du har {usette.length} ny{usette.length > 1 ? "e" : ""} vakttildeling{usette.length > 1 ? "er" : ""}
+          </div>
+          {usette.map((o) => (
+            <div key={o.id} style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "8px 0", borderTop: "0.5px solid rgba(192,57,43,0.2)",
+            }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{o.kunde}</span>
+                <span className="tiny muted" style={{ marginLeft: 8 }}>{visDato(o.dato)}{o.klokkeslett ? ` · ${visTid(o.klokkeslett)}` : ""}</span>
+              </div>
               <button
-                onClick={() => {
-                  if (!confirm("Trekke deg fra denne vakta?")) return;
-                  handling(o.id, () => api.trekkVakt(o.id));
-                }}
+                className="primary"
+                onClick={() => handling(o.id, () => api.kvitter(o.id))}
                 disabled={lasterHandling[o.id]}
-                style={{ flex: 1 }}
+                style={{ fontSize: 12, padding: "5px 12px" }}
               >
-                Trekk meg
+                {lasterHandling[o.id] ? "..." : "Kvitter"}
               </button>
             </div>
-          </VaktKort>
-        ))}
-      </section>
+          ))}
+        </div>
+      )}
+
+      <Seksjon tittel="Tilgjengelige vakter" undertittel="Trykk «Ta vakt» for å melde deg på">
+        {ledigeVakter.length === 0
+          ? <TomMelding>Ingen ledige vakter akkurat nå.</TomMelding>
+          : ledigeVakter.map((o) => {
+              const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
+              return (
+                <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
+                  {erFull ? (
+                    <FullChip />
+                  ) : (
+                    <button
+                      className="primary"
+                      disabled={lasterHandling[o.id]}
+                      onClick={() => handling(o.id, () => api.taVakt(o.id))}
+                      style={{ flex: 1 }}
+                    >
+                      {lasterHandling[o.id] ? "..." : "Ta vakt"}
+                    </button>
+                  )}
+                </VaktKort>
+              );
+            })
+        }
+      </Seksjon>
+
+      <Seksjon tittel="Mine vakter" undertittel={`${mineVakter.length} ${mineVakter.length === 1 ? "vakt" : "vakter"}`}>
+        {mineVakter.length === 0
+          ? <TomMelding>Du har ikke tatt noen vakter enda.</TomMelding>
+          : mineVakter.map((o) => (
+              <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]} minVakt>
+                <VaktHandlinger o={o} lasterHandling={lasterHandling} handling={handling} />
+              </VaktKort>
+            ))
+        }
+      </Seksjon>
     </div>
   );
 }
 
-function PassordSeksjon() {
-  const [vis, setVis] = useState(false);
-  const [gammelt, setGammelt] = useState("");
-  const [nytt, setNytt] = useState("");
-  const [bekreft, setBekreft] = useState("");
-  const [lagrer, setLagrer] = useState(false);
-  const [feil, setFeil] = useState(null);
-  const [ok, setOk] = useState(false);
+function VaktHandlinger({ o, lasterHandling, handling }) {
+  const [visFravaer, setVisFravaer] = useState(false);
+  const [begrunnelse, setBegrunnelse] = useState("");
 
-  async function bytt(e) {
-    e.preventDefault();
-    if (nytt !== bekreft) { setFeil("Passordene er ikke like."); return; }
-    if (nytt.length < 6) { setFeil("Passordet må være minst 6 tegn."); return; }
-    setLagrer(true); setFeil(null);
-    try {
-      await api.endreEgetPassord(gammelt, nytt);
-      setGammelt(""); setNytt(""); setBekreft("");
-      setVis(false); setOk(true);
-      setTimeout(() => setOk(false), 4000);
-    } catch {
-      setFeil("Feil gammelt passord, eller noe gikk galt.");
-    } finally {
-      setLagrer(false);
-    }
+  if (visFravaer) {
+    return (
+      <div style={{ flex: 1 }}>
+        <textarea
+          value={begrunnelse}
+          onChange={(e) => setBegrunnelse(e.target.value)}
+          placeholder="Skriv begrunnelse for fravær..."
+          rows={2}
+          style={{ marginBottom: 8 }}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setVisFravaer(false)} style={{ flex: 1 }}>Avbryt</button>
+          <button
+            onClick={() => handling(o.id, () => api.fravaer(o.id, begrunnelse))}
+            disabled={!begrunnelse.trim() || lasterHandling[o.id]}
+            style={{ flex: 1, background: "var(--warning-bg)", color: "var(--warning)", border: "0.5px solid var(--warning)" }}
+          >
+            {lasterHandling[o.id] ? "..." : "Bekreft fravær"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span className="tiny muted">Konto</span>
-        <button onClick={() => setVis(!vis)} className="tiny" style={{ fontSize: 12, padding: "4px 10px" }}>
-          {vis ? "Avbryt" : "Bytt passord"}
+    <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap" }}>
+      {o.minStatus === "FRAVAER" ? (
+        <span style={{
+          flex: 1, fontSize: 12, color: "var(--warning)", padding: "8px 0",
+        }}>
+          Meldt fravær{o.fravaerBegrunnelse ? `: ${o.fravaerBegrunnelse}` : ""}
+        </span>
+      ) : (
+        <button
+          onClick={() => setVisFravaer(true)}
+          style={{ flex: 1, fontSize: 13 }}
+        >
+          Meld fravær
         </button>
-      </div>
-      {ok && <p className="tiny" style={{ color: "var(--teal)", margin: "6px 0 0" }}>Passord oppdatert.</p>}
-      {vis && (
-        <form onSubmit={bytt} style={{ marginTop: 10, background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 14 }}>
-          <input type="password" placeholder="Gammelt passord" value={gammelt} onChange={(e) => setGammelt(e.target.value)} style={{ marginBottom: 8 }} />
-          <input type="password" placeholder="Nytt passord" value={nytt} onChange={(e) => setNytt(e.target.value)} style={{ marginBottom: 8 }} />
-          <input type="password" placeholder="Bekreft nytt passord" value={bekreft} onChange={(e) => setBekreft(e.target.value)} style={{ marginBottom: 10 }} />
-          {feil && <p style={{ color: "#a32d2d", fontSize: 12, margin: "0 0 8px" }}>{feil}</p>}
-          <button type="submit" className="primary" disabled={lagrer} style={{ width: "100%" }}>
-            {lagrer ? "Lagrer..." : "Oppdater passord"}
-          </button>
-        </form>
       )}
+      <button
+        onClick={() => { if (!confirm("Trekke deg fra denne vakta?")) return; handling(o.id, () => api.trekkVakt(o.id)); }}
+        disabled={lasterHandling[o.id]}
+        style={{ flex: 1, fontSize: 13, color: "#e05555", borderColor: "rgba(224,85,85,0.3)" }}
+      >
+        Trekk meg
+      </button>
     </div>
   );
 }
@@ -204,54 +168,89 @@ function VaktKort({ o, laster, children }) {
       background: "var(--surface)",
       border: "0.5px solid var(--border)",
       borderRadius: "var(--radius-lg)",
-      padding: "14px 16px",
+      padding: "16px",
       marginBottom: 10,
       opacity: laster ? 0.6 : 1,
+      transition: "opacity .15s",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <span style={{ fontWeight: 500 }}>{visDato(o.dato)}</span>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {o.minStatus && (
-            <span style={{ fontSize: 11, ...STATUS_FARGE[o.minStatus] }}>
-              {STATUS_TEKST[o.minStatus]}
-            </span>
-          )}
-          <TypePille type={o.type} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{o.kunde}</div>
+          <div className="tiny muted" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <span>{visDato(o.dato)}</span>
+            {o.klokkeslett && <span>· {visTid(o.klokkeslett)}</span>}
+            {o.sted && <span>· {o.sted}</span>}
+          </div>
         </div>
-      </div>
-
-      <div style={{ fontWeight: 400, marginBottom: 6 }}>{o.kunde}</div>
-
-      <div className="tiny muted" style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: o.adresse ? 6 : 10 }}>
-        {o.klokkeslett && <span>Oppmøte {visTid(o.klokkeslett)}</span>}
-        {o.kjoretoy && <span>{o.kjoretoy}</span>}
-        {o.sted && <span>{o.sted}</span>}
+        <TypePille type={o.type} />
       </div>
 
       {o.adresse && (
-        <div className="tiny" style={{ marginBottom: 8, color: "var(--info)" }}>
+        <div style={{ fontSize: 13, color: "var(--info)", marginBottom: 8 }}>
           📍 {o.adresse}
         </div>
       )}
 
       {o.mannskap?.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
           {o.mannskap.map((m) => (
             <span key={m.id} style={{
-              fontSize: 11, padding: "2px 8px", borderRadius: 20,
-              background: "var(--border)", color: "var(--text-muted)",
+              fontSize: 11, padding: "2px 9px", borderRadius: 20,
+              background: m.status === "FRAVAER" ? "var(--warning-bg)" : "var(--border)",
+              color: m.status === "FRAVAER" ? "var(--warning)" : "var(--text-muted)",
             }}>{m.navn}</span>
           ))}
+          {o.maksAntall && (
+            <span className="tiny muted" style={{ padding: "2px 0", alignSelf: "center" }}>
+              {o.mannskap.length}/{o.maksAntall}
+            </span>
+          )}
         </div>
       )}
 
       {o.notat && (
-        <p className="tiny muted" style={{ margin: "0 0 10px" }}>{o.notat}</p>
+        <p className="tiny muted" style={{ margin: "0 0 10px", fontStyle: "italic" }}>{o.notat}</p>
       )}
 
-      <div style={{ display: "flex" }}>
-        {children}
+      <div style={{ display: "flex" }}>{children}</div>
+    </div>
+  );
+}
+
+function FullChip() {
+  return (
+    <span style={{
+      flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600,
+      color: "var(--warning)", background: "var(--warning-bg)",
+      borderRadius: "var(--radius)", padding: "8px 14px",
+      border: "0.5px solid rgba(245,166,35,0.3)",
+    }}>
+      Fullt
+    </span>
+  );
+}
+
+function Seksjon({ tittel, undertittel, children }) {
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <div style={{ marginBottom: 14 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, letterSpacing: 0.2 }}>{tittel}</h2>
+        {undertittel && <p className="muted tiny" style={{ margin: "3px 0 0" }}>{undertittel}</p>}
       </div>
+      {children}
+    </section>
+  );
+}
+
+function TomMelding({ children }) {
+  return (
+    <div style={{
+      padding: "20px 16px", textAlign: "center",
+      background: "var(--surface)", borderRadius: "var(--radius-lg)",
+      border: "0.5px solid var(--border)",
+      color: "var(--text-muted)", fontSize: 14,
+    }}>
+      {children}
     </div>
   );
 }
