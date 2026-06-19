@@ -11,6 +11,7 @@ public class OppdragRequest {
     public String kunde;
     public String sted;
     public String adresse;
+    public Integer maksAntall;
     public String type;
     public String notat;
     public UUID kjoretoyId;

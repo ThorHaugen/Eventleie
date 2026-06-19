@@ -28,6 +28,8 @@ public class Oppdrag {
 
     private String adresse;
 
+    private Integer maksAntall;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OppdragType type;
@@ -100,6 +102,14 @@ public class Oppdrag {
 
     public void setAdresse(String adresse) {
         this.adresse = adresse;
+    }
+
+    public Integer getMaksAntall() {
+        return maksAntall;
+    }
+
+    public void setMaksAntall(Integer maksAntall) {
+        this.maksAntall = maksAntall;
     }
 
     public OppdragType getType() {

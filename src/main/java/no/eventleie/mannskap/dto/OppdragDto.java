@@ -19,6 +19,7 @@ public class OppdragDto {
     public String kunde;
     public String sted;
     public String adresse;
+    public Integer maksAntall;
     public String type;
     public String notat;
     public String kjoretoy;
@@ -34,6 +35,7 @@ public class OppdragDto {
         d.kunde = o.getKunde();
         d.sted = o.getSted();
         d.adresse = o.getAdresse();
+        d.maksAntall = o.getMaksAntall();
         d.type = o.getType() != null ? o.getType().name() : null;
         d.notat = o.getNotat();
         d.kjoretoy = o.getKjoretoy() != null ? o.getKjoretoy().getNavn() : null;

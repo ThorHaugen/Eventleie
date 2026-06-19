@@ -73,6 +73,7 @@ public class OppdragController {
         o.setKunde(req.kunde);
         o.setSted(req.sted);
         o.setAdresse(req.adresse);
+        o.setMaksAntall(req.maksAntall);
         if (req.type != null) {
             o.setType(OppdragType.valueOf(req.type));
         }
