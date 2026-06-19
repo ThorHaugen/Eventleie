@@ -24,6 +24,17 @@ public class MegController {
         this.passordKoder = passordKoder;
     }
 
+    @GetMapping
+    public ResponseEntity<?> meg(@AuthenticationPrincipal UserDetails bruker) {
+        return ansattRepo.findByBrukernavn(bruker.getUsername()).map(a -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("brukernavn", a.getBrukernavn());
+            m.put("navn", a.getNavn());
+            m.put("rolle", a.getRolle().name());
+            return ResponseEntity.ok(m);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/varsler")
     public ResponseEntity<?> varsler(@AuthenticationPrincipal UserDetails bruker) {
         return ansattRepo.findByBrukernavn(bruker.getUsername()).map(a -> {

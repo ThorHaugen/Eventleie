@@ -10,20 +10,18 @@ export default function App() {
 
   useEffect(() => {
     if (lastLagretInnlogging()) {
-      api.alleOppdrag()
-        .then(() => setBruker({ rolle: "ADMIN", fra: "cache" }))
-        .catch(() => api.mineOppdrag()
-          .then(() => setBruker({ rolle: "ANSATT", fra: "cache" }))
-          .catch(() => { loggUt(); })
-        )
+      api.meg()
+        .then((meg) => setBruker({ brukernavn: meg.brukernavn, rolle: meg.rolle }))
+        .catch(() => { loggUt(); })
         .finally(() => setSjekker(false));
     } else {
       setSjekker(false);
     }
   }, []);
 
-  function onInnlogget(brukernavn, rolle) {
-    setBruker({ brukernavn, rolle });
+  async function onInnlogget() {
+    const meg = await api.meg();
+    setBruker({ brukernavn: meg.brukernavn, rolle: meg.rolle });
   }
 
   function ut() {
@@ -34,11 +32,13 @@ export default function App() {
   if (sjekker) return null;
   if (!bruker) return <Innlogging onInnlogget={onInnlogget} />;
 
+  const erAdmin = ["SJEF", "UTVIKLER", "ADMIN"].includes(bruker.rolle);
+
   return (
     <div>
       <Header bruker={bruker} onLoggUt={ut} onBrukernavnEndret={(nyttNavn) => setBruker({ ...bruker, brukernavn: nyttNavn })} />
-      {bruker.rolle === "ADMIN"
-        ? <AdminDashboard />
+      {erAdmin
+        ? <AdminDashboard bruker={bruker} />
         : <AnsattVisning brukernavn={bruker.brukernavn} />}
     </div>
   );

@@ -39,7 +39,7 @@ public class DataSeeder implements CommandLineRunner {
 
         Map<String, Ansatt> folk = new HashMap<>();
         folk.put("samuel", lagre(new Ansatt("Samuel Løvland", "96925815", "samuel",
-                koder.encode("passord"), Rolle.ADMIN)));
+                koder.encode("passord"), Rolle.SJEF)));
         folk.put("magne", lagre(new Ansatt("Magne Wallin", null, "magne",
                 koder.encode("passord"), Rolle.ANSATT)));
         folk.put("adrianf", lagre(new Ansatt("Adrian Fearnley", null, "adrianf",

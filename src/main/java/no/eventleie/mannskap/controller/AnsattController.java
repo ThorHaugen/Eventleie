@@ -5,6 +5,8 @@ import no.eventleie.mannskap.model.Rolle;
 import no.eventleie.mannskap.repository.AnsattRepository;
 import no.eventleie.mannskap.repository.TildelingRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,12 @@ public class AnsattController {
         this.passordKoder = passordKoder;
     }
 
+    private int niva(UserDetails bruker) {
+        return ansattRepo.findByBrukernavn(bruker.getUsername())
+                .map(a -> a.getRolle().niva())
+                .orElse(0);
+    }
+
     @GetMapping
     public List<Map<String, Object>> alle() {
         return ansattRepo.findAll().stream()
@@ -42,7 +50,14 @@ public class AnsattController {
     }
 
     @PostMapping
-    public ResponseEntity<?> opprett(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> opprett(
+            @AuthenticationPrincipal UserDetails innlogget,
+            @RequestBody Map<String, String> body) {
+        int kallerNiva = niva(innlogget);
+        Rolle nyRolle = Rolle.valueOf(body.getOrDefault("rolle", "ANSATT"));
+        if (nyRolle.niva() >= kallerNiva) {
+            return ResponseEntity.status(403).body("Du kan ikke opprette en bruker med denne rollen.");
+        }
         String brukernavn = body.get("brukernavn");
         if (ansattRepo.findByBrukernavn(brukernavn).isPresent()) {
             return ResponseEntity.badRequest().body("Brukernavn er allerede i bruk.");
@@ -52,27 +67,41 @@ public class AnsattController {
                 body.getOrDefault("telefon", null),
                 brukernavn,
                 passordKoder.encode(body.get("passord")),
-                Rolle.valueOf(body.getOrDefault("rolle", "ANSATT"))
+                nyRolle
         );
         ansattRepo.save(a);
         return ResponseEntity.ok(Map.of("id", a.getId(), "navn", a.getNavn()));
     }
 
     @PutMapping("/{id}/passord")
-    public ResponseEntity<?> settPassord(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> settPassord(
+            @AuthenticationPrincipal UserDetails innlogget,
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body) {
+        int kallerNiva = niva(innlogget);
         return ansattRepo.findById(id).map(a -> {
+            if (a.getRolle().niva() >= kallerNiva) {
+                return ResponseEntity.status(403).<Void>build();
+            }
             a.setPassordHash(passordKoder.encode(body.get("passord")));
             ansattRepo.save(a);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @Transactional
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> slett(@PathVariable UUID id) {
-        if (!ansattRepo.existsById(id)) return ResponseEntity.notFound().build();
-        tildelingRepo.deleteAllByAnsattId(id);
-        ansattRepo.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> slett(
+            @AuthenticationPrincipal UserDetails innlogget,
+            @PathVariable UUID id) {
+        int kallerNiva = niva(innlogget);
+        return ansattRepo.findById(id).map(a -> {
+            if (a.getRolle().niva() >= kallerNiva) {
+                return ResponseEntity.status(403).<Void>build();
+            }
+            tildelingRepo.deleteAllByAnsattId(id);
+            ansattRepo.deleteById(id);
+            return ResponseEntity.<Void>noContent().build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 }

@@ -14,23 +14,13 @@ export default function Innlogging({ onInnlogget }) {
     settInnlogging(brukernavn, passord);
 
     try {
-      await api.alleOppdrag();
-      onInnlogget(brukernavn, "ADMIN");
-    } catch (adminFeil) {
-      if (adminFeil.status === 403) {
-        try {
-          await api.mineOppdrag();
-          onInnlogget(brukernavn, "ANSATT");
-          return;
-        } catch {
-          setFeil("Feil brukernavn eller passord.");
-        }
-      } else if (adminFeil.status === 401) {
+      await onInnlogget();
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
         setFeil("Feil brukernavn eller passord.");
       } else {
-        setFeil("Fikk ikke kontakt med serveren. Kjorer backend pa port 8080?");
+        setFeil("Fikk ikke kontakt med serveren. Kjører backend på port 8080?");
       }
-    } finally {
       setLaster(false);
     }
   }

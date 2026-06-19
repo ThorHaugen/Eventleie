@@ -2,15 +2,30 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
-export default function AdminDashboard() {
+function rolleNavn(rolle) {
+  if (rolle === "SJEF") return "Sjef";
+  if (rolle === "UTVIKLER") return "Utvikler";
+  if (rolle === "ADMIN") return "Admin";
+  return "Ansatt";
+}
+
+function hierarki(rolle) {
+  if (rolle === "SJEF") return 3;
+  if (rolle === "UTVIKLER") return 2;
+  if (rolle === "ADMIN") return 1;
+  return 0;
+}
+
+export default function AdminDashboard({ bruker }) {
   const [fane, setFane] = useState("oppdrag");
+  const kallerNiva = hierarki(bruker?.rolle);
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 16px 40px" }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         <FaneKnapp aktiv={fane === "oppdrag"} onClick={() => setFane("oppdrag")}>Oppdrag</FaneKnapp>
         <FaneKnapp aktiv={fane === "ansatte"} onClick={() => setFane("ansatte")}>Ansatte</FaneKnapp>
       </div>
-      {fane === "oppdrag" ? <OppdragPanel /> : <AnsattPanel />}
+      {fane === "oppdrag" ? <OppdragPanel kallerNiva={kallerNiva} /> : <AnsattPanel kallerNiva={kallerNiva} />}
     </div>
   );
 }
@@ -36,7 +51,7 @@ function FaneKnapp({ aktiv, onClick, children }) {
 
 // ─── OPPDRAG ────────────────────────────────────────────────────────────────
 
-function OppdragPanel() {
+function OppdragPanel({ kallerNiva }) {
   const [oppdrag, setOppdrag] = useState([]);
   const [ansatte, setAnsatte] = useState([]);
   const [valgt, setValgt] = useState(null);
@@ -60,6 +75,7 @@ function OppdragPanel() {
       <OppdragEditor
         oppdrag={valgt}
         ansatte={ansatte}
+        kallerNiva={kallerNiva}
         onFerdig={() => { setValgt(null); last(); }}
         onAvbryt={() => setValgt(null)}
       />
@@ -133,7 +149,7 @@ function statusFarge(status) {
   return { bg: "var(--border)", fg: "var(--text-muted)" };
 }
 
-function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
+function OppdragEditor({ oppdrag, ansatte, kallerNiva, onFerdig, onAvbryt }) {
   const [kunde, setKunde] = useState(oppdrag.kunde || "");
   const [dato, setDato] = useState(oppdrag.dato || "");
   const [klokkeslett, setKlokkeslett] = useState(oppdrag.klokkeslett ? oppdrag.klokkeslett.slice(0, 5) : "");
@@ -146,7 +162,9 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
   const [leggTilId, setLeggTilId] = useState("");
   const [lagrer, setLagrer] = useState(false);
 
-  const ikkeValgte = ansatte.filter((a) => !mannskap.find((m) => m.id === a.id));
+  const ikkeValgte = ansatte.filter((a) =>
+    !mannskap.find((m) => m.id === a.id) && hierarki(a.rolle) < kallerNiva
+  );
 
   function leggTil() {
     const a = ansatte.find((a) => a.id === leggTilId);
@@ -236,9 +254,11 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
               {m.status === "BEKREFTET" ? "✓ Bekreftet" : m.status === "FRAVAER" ? "Fravær" : "Påmeldt"}
             </span>
           </div>
-          <button onClick={() => fjern(m.id)} style={{ color: "#a32d2d", fontSize: 12, padding: "4px 10px" }}>
-            Fjern
-          </button>
+          {hierarki(ansatte.find((a) => a.id === m.id)?.rolle) < kallerNiva && (
+            <button onClick={() => fjern(m.id)} style={{ color: "#a32d2d", fontSize: 12, padding: "4px 10px" }}>
+              Fjern
+            </button>
+          )}
         </div>
       ))}
 
@@ -270,7 +290,7 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
 
 // ─── ANSATTE ────────────────────────────────────────────────────────────────
 
-function AnsattPanel() {
+function AnsattPanel({ kallerNiva }) {
   const [ansatte, setAnsatte] = useState([]);
   const [laster, setLaster] = useState(true);
   const [visSkjema, setVisSkjema] = useState(false);
@@ -327,7 +347,8 @@ function AnsattPanel() {
           <Felt label="Rolle">
             <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
               <option value="ANSATT">Ansatt</option>
-              <option value="ADMIN">Admin</option>
+              {kallerNiva >= 2 && <option value="ADMIN">Admin</option>}
+              {kallerNiva >= 3 && <option value="UTVIKLER">Utvikler</option>}
             </select>
           </Felt>
           {feil && <p style={{ color: "#a32d2d", fontSize: 13, margin: "0 0 10px" }}>{feil}</p>}
@@ -338,13 +359,13 @@ function AnsattPanel() {
       )}
 
       {ansatte.map((a) => (
-        <AnsattKort key={a.id} ansatt={a} onOppdater={last} />
+        <AnsattKort key={a.id} ansatt={a} kallerNiva={kallerNiva} onOppdater={last} />
       ))}
     </>
   );
 }
 
-function AnsattKort({ ansatt, onOppdater }) {
+function AnsattKort({ ansatt, kallerNiva, onOppdater }) {
   const [utvid, setUtvid] = useState(false);
   const [nyttPassord, setNyttPassord] = useState("");
   const [bekreftNavn, setBekreftNavn] = useState("");
@@ -398,37 +419,42 @@ function AnsattKort({ ansatt, onOppdater }) {
         >
           <div>
             <div style={{ fontWeight: 500 }}>{ansatt.navn}</div>
-            <div className="tiny muted">{ansatt.brukernavn} · {ansatt.rolle === "ADMIN" ? "Admin" : "Ansatt"}</div>
+            <div className="tiny muted">{ansatt.brukernavn} · {rolleNavn(ansatt.rolle)}</div>
           </div>
           <span className="tiny muted">{utvid ? "▲" : "▼"}</span>
         </div>
 
         {utvid && (
           <div style={{ borderTop: "0.5px solid var(--border)", padding: "14px 16px" }}>
-            <form onSubmit={endrePassord} style={{ marginBottom: 16 }}>
-              <div className="tiny muted" style={{ marginBottom: 6, fontWeight: 600 }}>Sett nytt passord</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type="password"
-                  value={nyttPassord}
-                  onChange={(e) => setNyttPassord(e.target.value)}
-                  placeholder="Nytt passord (min. 6 tegn)"
-                  style={{ flex: 1 }}
-                />
-                <button type="submit" className="primary" disabled={lagrerPassord} style={{ whiteSpace: "nowrap" }}>
-                  {lagrerPassord ? "..." : "Sett passord"}
+            {hierarki(ansatt.rolle) < kallerNiva ? (
+              <>
+                <form onSubmit={endrePassord} style={{ marginBottom: 16 }}>
+                  <div className="tiny muted" style={{ marginBottom: 6, fontWeight: 600 }}>Sett nytt passord</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="password"
+                      value={nyttPassord}
+                      onChange={(e) => setNyttPassord(e.target.value)}
+                      placeholder="Nytt passord (min. 6 tegn)"
+                      style={{ flex: 1 }}
+                    />
+                    <button type="submit" className="primary" disabled={lagrerPassord} style={{ whiteSpace: "nowrap" }}>
+                      {lagrerPassord ? "..." : "Sett passord"}
+                    </button>
+                  </div>
+                  {passordFeil && <p style={{ color: "#a32d2d", fontSize: 12, margin: "6px 0 0" }}>{passordFeil}</p>}
+                  {passordOk && <p style={{ color: "var(--teal)", fontSize: 12, margin: "6px 0 0" }}>Passord oppdatert.</p>}
+                </form>
+                <button
+                  onClick={() => setVisSlettModal(true)}
+                  style={{ fontSize: 13, color: "#a32d2d", background: "none", border: "0.5px solid #a32d2d", borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer" }}
+                >
+                  Slett ansatt
                 </button>
-              </div>
-              {passordFeil && <p style={{ color: "#a32d2d", fontSize: 12, margin: "6px 0 0" }}>{passordFeil}</p>}
-              {passordOk && <p style={{ color: "var(--teal)", fontSize: 12, margin: "6px 0 0" }}>Passord oppdatert.</p>}
-            </form>
-
-            <button
-              onClick={() => setVisSlettModal(true)}
-              style={{ fontSize: 13, color: "#a32d2d", background: "none", border: "0.5px solid #a32d2d", borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer" }}
-            >
-              Slett ansatt
-            </button>
+              </>
+            ) : (
+              <p className="tiny muted">Du har ikke tilgang til å administrere denne brukeren.</p>
+            )}
           </div>
         )}
       </div>
