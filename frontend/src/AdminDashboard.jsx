@@ -56,6 +56,7 @@ function OppdragPanel({ kallerNiva }) {
   const [ansatte, setAnsatte] = useState([]);
   const [valgt, setValgt] = useState(null);
   const [laster, setLaster] = useState(true);
+  const [visHistorikk, setVisHistorikk] = useState(false);
 
   async function last() {
     const [o, a] = await Promise.all([api.alleOppdrag(), api.alleAnsatte()]);
@@ -82,22 +83,32 @@ function OppdragPanel({ kallerNiva }) {
     );
   }
 
+  const idag = new Date().toISOString().slice(0, 10);
+  const kommende = oppdrag.filter((o) => o.dato >= idag);
+  const historikk = oppdrag.filter((o) => o.dato < idag).reverse();
+  const visListe = visHistorikk ? historikk : kommende;
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Alle oppdrag</h2>
-        <button
-          className="primary"
-          onClick={() => velg({ ny: true, type: "MONTERING", mannskap: [] })}
-          style={{ fontSize: 14, padding: "8px 16px" }}
-        >
-          + Nytt
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <FaneKnapp aktiv={!visHistorikk} onClick={() => setVisHistorikk(false)}>Kommende</FaneKnapp>
+          <FaneKnapp aktiv={visHistorikk} onClick={() => setVisHistorikk(true)}>Historikk</FaneKnapp>
+        </div>
+        {!visHistorikk && (
+          <button
+            className="primary"
+            onClick={() => velg({ ny: true, type: "MONTERING", mannskap: [] })}
+            style={{ fontSize: 14, padding: "8px 16px" }}
+          >
+            + Nytt
+          </button>
+        )}
       </div>
 
-      {oppdrag.length === 0 && <p className="muted tiny">Ingen oppdrag enda.</p>}
+      {visListe.length === 0 && <p className="muted tiny">{visHistorikk ? "Ingen tidligere oppdrag." : "Ingen kommende oppdrag."}</p>}
 
-      {oppdrag.map((o) => (
+      {visListe.map((o) => (
         <div
           key={o.id}
           onClick={() => velg(o)}
