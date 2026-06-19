@@ -203,13 +203,6 @@ function VaktHandlinger({ o, lasterHandling, handling }) {
           Meld fravær
         </button>
       )}
-      <button
-        onClick={() => { if (!confirm("Trekke deg fra denne vakta?")) return; handling(o.id, () => api.trekkVakt(o.id)); }}
-        disabled={lasterHandling[o.id]}
-        style={{ flex: 1, fontSize: 13, color: "#e05555", borderColor: "rgba(224,85,85,0.3)" }}
-      >
-        Trekk meg
-      </button>
     </div>
   );
 }
