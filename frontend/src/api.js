@@ -51,4 +51,5 @@ export const api = {
   alleAnsatte: () => kall("/api/ansatte"),
   opprettAnsatt: (data) => kall("/api/ansatte", { method: "POST", body: JSON.stringify(data) }),
   slettAnsatt: (id) => kall(`/api/ansatte/${id}`, { method: "DELETE" }),
+  settPassord: (id, passord) => kall(`/api/ansatte/${id}/passord`, { method: "PUT", body: JSON.stringify({ passord }) }),
 };

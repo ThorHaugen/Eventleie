@@ -315,7 +315,7 @@ function AnsattPanel() {
           borderRadius: "var(--radius-lg)", padding: "16px", marginBottom: 16,
         }}>
           <Felt label="Navn"><input value={navn} onChange={(e) => setNavn(e.target.value)} placeholder="Fullt navn" autoFocus /></Felt>
-          <Felt label="Brukernavn"><input value={brukernavn} onChange={(e) => setBrukernavn(e.target.value)} placeholder="f.eks. magne" /></Felt>
+          <Felt label="Brukernavn"><input value={brukernavn} onChange={(e) => setBrukernavn(e.target.value)} placeholder="f.eks. magne.hansen" /></Felt>
           <Felt label="Passord"><input type="password" value={passord} onChange={(e) => setPassord(e.target.value)} placeholder="Midlertidig passord" /></Felt>
           <Felt label="Rolle">
             <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
@@ -331,17 +331,146 @@ function AnsattPanel() {
       )}
 
       {ansatte.map((a) => (
-        <div key={a.id} style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          background: "var(--surface)", border: "0.5px solid var(--border)",
-          borderRadius: "var(--radius-lg)", padding: "12px 16px", marginBottom: 8,
-        }}>
+        <AnsattKort key={a.id} ansatt={a} onOppdater={last} />
+      ))}
+    </>
+  );
+}
+
+function AnsattKort({ ansatt, onOppdater }) {
+  const [utvid, setUtvid] = useState(false);
+  const [nyttPassord, setNyttPassord] = useState("");
+  const [bekreftNavn, setBekreftNavn] = useState("");
+  const [visSlettModal, setVisSlettModal] = useState(false);
+  const [lagrerPassord, setLagrerPassord] = useState(false);
+  const [sletter, setSletter] = useState(false);
+  const [passordFeil, setPassordFeil] = useState(null);
+  const [passordOk, setPassordOk] = useState(false);
+
+  async function endrePassord(e) {
+    e.preventDefault();
+    if (!nyttPassord || nyttPassord.length < 6) {
+      setPassordFeil("Passordet må være minst 6 tegn.");
+      return;
+    }
+    setLagrerPassord(true);
+    setPassordFeil(null);
+    try {
+      await api.settPassord(ansatt.id, nyttPassord);
+      setNyttPassord("");
+      setPassordOk(true);
+      setTimeout(() => setPassordOk(false), 3000);
+    } catch {
+      setPassordFeil("Klarte ikke endre passord.");
+    } finally {
+      setLagrerPassord(false);
+    }
+  }
+
+  async function slettAnsatt() {
+    if (bekreftNavn.trim().toLowerCase() !== ansatt.navn.trim().toLowerCase()) return;
+    setSletter(true);
+    try {
+      await api.slettAnsatt(ansatt.id);
+      onOppdater();
+    } catch {
+      setSletter(false);
+      setVisSlettModal(false);
+    }
+  }
+
+  return (
+    <>
+      <div style={{
+        background: "var(--surface)", border: "0.5px solid var(--border)",
+        borderRadius: "var(--radius-lg)", marginBottom: 8, overflow: "hidden",
+      }}>
+        <div
+          onClick={() => setUtvid(!utvid)}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer" }}
+        >
           <div>
-            <div style={{ fontWeight: 500 }}>{a.navn}</div>
-            <div className="tiny muted">{a.brukernavn} · {a.rolle === "ADMIN" ? "Admin" : "Ansatt"}</div>
+            <div style={{ fontWeight: 500 }}>{ansatt.navn}</div>
+            <div className="tiny muted">{ansatt.brukernavn} · {ansatt.rolle === "ADMIN" ? "Admin" : "Ansatt"}</div>
+          </div>
+          <span className="tiny muted">{utvid ? "▲" : "▼"}</span>
+        </div>
+
+        {utvid && (
+          <div style={{ borderTop: "0.5px solid var(--border)", padding: "14px 16px" }}>
+            <form onSubmit={endrePassord} style={{ marginBottom: 16 }}>
+              <div className="tiny muted" style={{ marginBottom: 6, fontWeight: 600 }}>Sett nytt passord</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="password"
+                  value={nyttPassord}
+                  onChange={(e) => setNyttPassord(e.target.value)}
+                  placeholder="Nytt passord (min. 6 tegn)"
+                  style={{ flex: 1 }}
+                />
+                <button type="submit" className="primary" disabled={lagrerPassord} style={{ whiteSpace: "nowrap" }}>
+                  {lagrerPassord ? "..." : "Sett passord"}
+                </button>
+              </div>
+              {passordFeil && <p style={{ color: "#a32d2d", fontSize: 12, margin: "6px 0 0" }}>{passordFeil}</p>}
+              {passordOk && <p style={{ color: "var(--teal)", fontSize: 12, margin: "6px 0 0" }}>Passord oppdatert.</p>}
+            </form>
+
+            <button
+              onClick={() => setVisSlettModal(true)}
+              style={{ fontSize: 13, color: "#a32d2d", background: "none", border: "0.5px solid #a32d2d", borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer" }}
+            >
+              Slett ansatt
+            </button>
+          </div>
+        )}
+      </div>
+
+      {visSlettModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
+        }}>
+          <div style={{
+            background: "var(--surface)", border: "0.5px solid var(--border-strong)",
+            borderRadius: "var(--radius-lg)", padding: 24, maxWidth: 360, width: "90%",
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Slett {ansatt.navn}?</div>
+            <p className="tiny muted" style={{ marginBottom: 16 }}>
+              Dette fjerner ansatte og alle tilhørende vakttildelinger permanent. Handlingen kan ikke angres.
+            </p>
+            <p className="tiny" style={{ marginBottom: 8 }}>
+              Skriv inn <strong>{ansatt.navn}</strong> for å bekrefte:
+            </p>
+            <input
+              value={bekreftNavn}
+              onChange={(e) => setBekreftNavn(e.target.value)}
+              placeholder={ansatt.navn}
+              autoFocus
+              style={{ width: "100%", marginBottom: 14, boxSizing: "border-box" }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { setVisSlettModal(false); setBekreftNavn(""); }}
+                style={{ flex: 1, padding: 10 }}
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={slettAnsatt}
+                disabled={sletter || bekreftNavn.trim().toLowerCase() !== ansatt.navn.trim().toLowerCase()}
+                style={{
+                  flex: 1, padding: 10,
+                  background: bekreftNavn.trim().toLowerCase() === ansatt.navn.trim().toLowerCase() ? "#a32d2d" : "var(--border)",
+                  color: "#fff", border: "none", borderRadius: "var(--radius)", cursor: "pointer",
+                }}
+              >
+                {sletter ? "Sletter..." : "Slett permanent"}
+              </button>
+            </div>
           </div>
         </div>
-      ))}
+      )}
     </>
   );
 }
