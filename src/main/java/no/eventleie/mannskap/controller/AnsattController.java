@@ -26,12 +26,14 @@ public class AnsattController {
     @GetMapping
     public List<Map<String, Object>> alle() {
         return ansattRepo.findAll().stream()
-                .map(a -> Map.of(
-                        "id", a.getId(),
-                        "navn", a.getNavn(),
-                        "brukernavn", a.getBrukernavn(),
-                        "rolle", a.getRolle().name()
-                ))
+                .map(a -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("id", a.getId());
+                    m.put("navn", a.getNavn());
+                    m.put("brukernavn", a.getBrukernavn());
+                    m.put("rolle", a.getRolle().name());
+                    return m;
+                })
                 .toList();
     }
 
