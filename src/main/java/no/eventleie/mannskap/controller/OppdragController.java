@@ -72,6 +72,7 @@ public class OppdragController {
         o.setKlokkeslett(req.klokkeslett);
         o.setKunde(req.kunde);
         o.setSted(req.sted);
+        o.setAdresse(req.adresse);
         if (req.type != null) {
             o.setType(OppdragType.valueOf(req.type));
         }

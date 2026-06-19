@@ -26,6 +26,8 @@ public class Oppdrag {
 
     private String sted;
 
+    private String adresse;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OppdragType type;
@@ -90,6 +92,14 @@ public class Oppdrag {
 
     public void setSted(String sted) {
         this.sted = sted;
+    }
+
+    public String getAdresse() {
+        return adresse;
+    }
+
+    public void setAdresse(String adresse) {
+        this.adresse = adresse;
     }
 
     public OppdragType getType() {

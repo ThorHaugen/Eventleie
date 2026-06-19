@@ -18,6 +18,7 @@ public class OppdragDto {
     public LocalTime klokkeslett;
     public String kunde;
     public String sted;
+    public String adresse;
     public String type;
     public String notat;
     public String kjoretoy;
@@ -32,6 +33,7 @@ public class OppdragDto {
         d.klokkeslett = o.getKlokkeslett();
         d.kunde = o.getKunde();
         d.sted = o.getSted();
+        d.adresse = o.getAdresse();
         d.type = o.getType() != null ? o.getType().name() : null;
         d.notat = o.getNotat();
         d.kjoretoy = o.getKjoretoy() != null ? o.getKjoretoy().getNavn() : null;

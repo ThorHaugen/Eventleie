@@ -10,6 +10,7 @@ public class OppdragRequest {
     public LocalTime klokkeslett;
     public String kunde;
     public String sted;
+    public String adresse;
     public String type;
     public String notat;
     public UUID kjoretoyId;

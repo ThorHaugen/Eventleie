@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/mine-oppdrag/**").authenticated()
+                        .requestMatchers("/api/meg/**").authenticated()
                         .requestMatchers("/api/vakter/**").authenticated()
                         .requestMatchers("/api/oppdrag/**").hasRole("ADMIN")
                         .requestMatchers("/api/ansatte/**").hasRole("ADMIN")
