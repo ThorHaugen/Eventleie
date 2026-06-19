@@ -173,12 +173,32 @@ function OppdragEditor({ oppdrag, ansatte, kallerNiva, onFerdig, onAvbryt }) {
     setLeggTilId("");
   }
 
-  function fjern(id) {
-    setMannskap(mannskap.filter((m) => m.id !== id));
+  async function fjern(id) {
+    const nyMannskap = mannskap.filter((m) => m.id !== id);
+    setMannskap(nyMannskap);
+    if (!oppdrag.ny) {
+      await api.oppdaterOppdrag(oppdrag.id, {
+        kunde, dato: dato || null,
+        klokkeslett: klokkeslett ? klokkeslett + ":00" : null,
+        type, sted: sted || null, adresse: adresse || null, notat: notat || null,
+        maksAntall: maksAntall !== "" ? Number(maksAntall) : null,
+        ansattIder: nyMannskap.map((m) => m.id),
+      });
+    }
   }
 
   async function lagre() {
-    if (!kunde) return alert("Skriv inn kunde.");
+    const mangler = [];
+    if (!kunde.trim()) mangler.push("Kunde");
+    if (!dato) mangler.push("Dato");
+    if (!klokkeslett) mangler.push("Tid");
+    if (!sted.trim()) mangler.push("Sted");
+    if (!adresse.trim()) mangler.push("Adresse");
+    if (maksAntall === "" || maksAntall === null) mangler.push("Maks antall mannskap");
+    if (mangler.length > 0) {
+      alert("Fyll inn følgende felter:\n• " + mangler.join("\n• "));
+      return;
+    }
     setLagrer(true);
     const data = {
       kunde, dato: dato || null,
