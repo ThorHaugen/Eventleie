@@ -7,6 +7,7 @@ export default function AnsattVisning({ brukernavn }) {
   const [laster, setLaster] = useState(true);
   const [feil, setFeil] = useState(null);
   const [lasterHandling, setLasterHandling] = useState({});
+  const [fane, setFane] = useState("mine");
 
   async function last() {
     setLaster(true);
@@ -36,12 +37,13 @@ export default function AnsattVisning({ brukernavn }) {
   if (feil) return <p style={{ padding: 24, color: "#e05555" }}>{feil}</p>;
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 48px" }}>
+    <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 48 }}>
 
       {usette.length > 0 && (
         <div style={{
+          margin: "16px 16px 0",
           background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.4)",
-          borderRadius: "var(--radius-lg)", padding: "14px 16px", marginBottom: 24,
+          borderRadius: "var(--radius-lg)", padding: "14px 16px",
         }}>
           <div style={{ fontWeight: 700, fontSize: 14, color: "#e05555", marginBottom: 8 }}>
             🔴 Du har {usette.length} ny{usette.length > 1 ? "e" : ""} vakttildeling{usette.length > 1 ? "er" : ""}
@@ -68,41 +70,91 @@ export default function AnsattVisning({ brukernavn }) {
         </div>
       )}
 
-      <Seksjon tittel="Tilgjengelige vakter" undertittel="Trykk «Ta vakt» for å melde deg på">
-        {ledigeVakter.length === 0
-          ? <TomMelding>Ingen ledige vakter akkurat nå.</TomMelding>
-          : ledigeVakter.map((o) => {
-              const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
-              return (
-                <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
-                  {erFull ? (
-                    <FullChip />
-                  ) : (
-                    <button
-                      className="primary"
-                      disabled={lasterHandling[o.id]}
-                      onClick={() => handling(o.id, () => api.taVakt(o.id))}
-                      style={{ flex: 1 }}
-                    >
-                      {lasterHandling[o.id] ? "..." : "Ta vakt"}
-                    </button>
-                  )}
-                </VaktKort>
-              );
-            })
-        }
-      </Seksjon>
+      <TabBar fane={fane} setFane={setFane} antallMine={mineVakter.length} antallLedige={ledigeVakter.length} />
 
-      <Seksjon tittel="Mine vakter" undertittel={`${mineVakter.length} ${mineVakter.length === 1 ? "vakt" : "vakter"}`}>
-        {mineVakter.length === 0
-          ? <TomMelding>Du har ikke tatt noen vakter enda.</TomMelding>
-          : mineVakter.map((o) => (
-              <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]} minVakt>
-                <VaktHandlinger o={o} lasterHandling={lasterHandling} handling={handling} />
-              </VaktKort>
-            ))
-        }
-      </Seksjon>
+      <div style={{ padding: "16px 16px 0" }}>
+        {fane === "mine" ? (
+          <Seksjon>
+            {mineVakter.length === 0
+              ? <TomMelding>Du har ikke tatt noen vakter enda.</TomMelding>
+              : mineVakter.map((o) => (
+                  <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]} minVakt>
+                    <VaktHandlinger o={o} lasterHandling={lasterHandling} handling={handling} />
+                  </VaktKort>
+                ))
+            }
+          </Seksjon>
+        ) : (
+          <Seksjon>
+            {ledigeVakter.length === 0
+              ? <TomMelding>Ingen ledige vakter akkurat nå.</TomMelding>
+              : ledigeVakter.map((o) => {
+                  const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
+                  return (
+                    <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
+                      {erFull ? (
+                        <FullChip />
+                      ) : (
+                        <button
+                          className="primary"
+                          disabled={lasterHandling[o.id]}
+                          onClick={() => handling(o.id, () => api.taVakt(o.id))}
+                          style={{ flex: 1 }}
+                        >
+                          {lasterHandling[o.id] ? "..." : "Ta vakt"}
+                        </button>
+                      )}
+                    </VaktKort>
+                  );
+                })
+            }
+          </Seksjon>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TabBar({ fane, setFane, antallMine, antallLedige }) {
+  const tabs = [
+    { id: "mine", label: "Mine vakter", antall: antallMine },
+    { id: "alle", label: "Tilgjengelige", antall: antallLedige },
+  ];
+  return (
+    <div style={{
+      display: "flex",
+      borderBottom: "0.5px solid var(--border)",
+      margin: "16px 0 0",
+      background: "var(--surface)",
+      position: "sticky", top: 56, zIndex: 10,
+    }}>
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setFane(t.id)}
+          style={{
+            flex: 1, padding: "13px 0",
+            background: "none", border: "none", borderRadius: 0,
+            borderBottom: fane === t.id ? "2px solid var(--info)" : "2px solid transparent",
+            color: fane === t.id ? "var(--info)" : "var(--text-muted)",
+            fontWeight: fane === t.id ? 700 : 400,
+            fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          }}
+        >
+          {t.label}
+          {t.antall > 0 && (
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              background: fane === t.id ? "var(--info-bg)" : "var(--border)",
+              color: fane === t.id ? "var(--info)" : "var(--text-muted)",
+              borderRadius: 10, padding: "1px 6px",
+            }}>
+              {t.antall}
+            </span>
+          )}
+        </button>
+      ))}
     </div>
   );
 }
@@ -230,16 +282,8 @@ function FullChip() {
   );
 }
 
-function Seksjon({ tittel, undertittel, children }) {
-  return (
-    <section style={{ marginBottom: 36 }}>
-      <div style={{ marginBottom: 14 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, letterSpacing: 0.2 }}>{tittel}</h2>
-        {undertittel && <p className="muted tiny" style={{ margin: "3px 0 0" }}>{undertittel}</p>}
-      </div>
-      {children}
-    </section>
-  );
+function Seksjon({ children }) {
+  return <section style={{ marginBottom: 36 }}>{children}</section>;
 }
 
 function TomMelding({ children }) {
