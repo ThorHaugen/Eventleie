@@ -94,7 +94,7 @@ public class DataSeeder implements CommandLineRunner {
         o.setKjoretoy(bil);
         o.setMal(mal);
         for (Ansatt a : mannskap) {
-            o.getTildelinger().add(new Tildeling(a, o));
+            o.getTildelinger().add(new Tildeling(a, o, false));
         }
         oppdragRepo.save(o);
     }
