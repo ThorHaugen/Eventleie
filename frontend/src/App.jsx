@@ -39,7 +39,7 @@ export default function App() {
       <Header bruker={bruker} onLoggUt={ut} onBrukernavnEndret={(nyttNavn) => setBruker({ ...bruker, brukernavn: nyttNavn })} />
       {erAdmin
         ? <AdminDashboard bruker={bruker} />
-        : <AnsattVisning brukernavn={bruker.brukernavn} />}
+        : <AnsattVisning brukernavn={bruker.brukernavn} onKvitter={oppdaterVarsler} />}
     </div>
   );
 }
@@ -50,11 +50,13 @@ function Header({ bruker, onLoggUt, onBrukernavnEndret }) {
   const [varsler, setVarsler] = useState(0);
   const ref = useRef();
 
-  useEffect(() => {
+  function oppdaterVarsler() {
     if (bruker.rolle === "ANSATT") {
       api.varsler().then((r) => setVarsler(r.antall)).catch(() => {});
     }
-  }, [bruker.rolle]);
+  }
+
+  useEffect(() => { oppdaterVarsler(); }, [bruker.rolle]);
 
   useEffect(() => {
     function klikk(e) {
