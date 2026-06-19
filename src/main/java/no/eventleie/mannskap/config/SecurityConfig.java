@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/mine-oppdrag/**").authenticated()
-                        .requestMatchers("/api/meg/**").authenticated()
+                        .requestMatchers("/api/meg", "/api/meg/**").authenticated()
                         .requestMatchers("/api/vakter/**").authenticated()
                         .requestMatchers("/api/oppdrag/**").hasAnyRole("ADMIN", "SJEF", "UTVIKLER")
                         .requestMatchers("/api/ansatte/**").hasAnyRole("ADMIN", "SJEF", "UTVIKLER")
