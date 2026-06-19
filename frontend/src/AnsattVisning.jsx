@@ -67,18 +67,31 @@ export default function AnsattVisning({ brukernavn, ansattId }) {
           <p className="muted tiny">Ingen ledige vakter akkurat nå.</p>
         )}
 
-        {ledigeVakter.map((o) => (
-          <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
-            <button
-              className="primary"
-              disabled={lasterHandling[o.id]}
-              onClick={() => handling(o.id, () => api.taVakt(o.id))}
-              style={{ flex: 1 }}
-            >
-              {lasterHandling[o.id] ? "..." : "Ta vakt"}
-            </button>
-          </VaktKort>
-        ))}
+        {ledigeVakter.map((o) => {
+          const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
+          return (
+            <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
+              {erFull ? (
+                <span style={{
+                  flex: 1, textAlign: "center", fontSize: 13, fontWeight: 600,
+                  color: "var(--warning)", background: "var(--warning-bg)",
+                  borderRadius: "var(--radius)", padding: "8px 14px",
+                }}>
+                  Fullt
+                </span>
+              ) : (
+                <button
+                  className="primary"
+                  disabled={lasterHandling[o.id]}
+                  onClick={() => handling(o.id, () => api.taVakt(o.id))}
+                  style={{ flex: 1 }}
+                >
+                  {lasterHandling[o.id] ? "..." : "Ta vakt"}
+                </button>
+              )}
+            </VaktKort>
+          );
+        })}
       </section>
 
       <section>

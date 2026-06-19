@@ -140,6 +140,7 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
   const [type, setType] = useState(oppdrag.type || "MONTERING");
   const [sted, setSted] = useState(oppdrag.sted || "");
   const [adresse, setAdresse] = useState(oppdrag.adresse || "");
+  const [maksAntall, setMaksAntall] = useState(oppdrag.maksAntall ?? "");
   const [notat, setNotat] = useState(oppdrag.notat || "");
   const [mannskap, setMannskap] = useState(oppdrag.mannskap || []);
   const [leggTilId, setLeggTilId] = useState("");
@@ -165,6 +166,7 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
       kunde, dato: dato || null,
       klokkeslett: klokkeslett ? klokkeslett + ":00" : null,
       type, sted: sted || null, adresse: adresse || null, notat: notat || null,
+          maksAntall: maksAntall !== "" ? Number(maksAntall) : null,
       ansattIder: mannskap.map((m) => m.id),
     };
     try {
@@ -213,6 +215,9 @@ function OppdragEditor({ oppdrag, ansatte, onFerdig, onAvbryt }) {
 
       <Felt label="Sted"><input value={sted} onChange={(e) => setSted(e.target.value)} placeholder="Valgfritt" /></Felt>
       <Felt label="Adresse"><input value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder="Gate og nummer, postnr sted" /></Felt>
+      <Felt label="Maks antall mannskap">
+        <input type="number" min="1" value={maksAntall} onChange={(e) => setMaksAntall(e.target.value)} placeholder="Ingen grense" />
+      </Felt>
       <Felt label="Notat"><textarea rows={2} value={notat} onChange={(e) => setNotat(e.target.value)} placeholder="Valgfritt" /></Felt>
 
       <div style={{ margin: "16px 0 8px", fontWeight: 600, fontSize: 14 }}>Mannskap</div>
