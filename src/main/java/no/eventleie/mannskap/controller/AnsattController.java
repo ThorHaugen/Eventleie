@@ -74,19 +74,18 @@ public class AnsattController {
     }
 
     @PutMapping("/{id}/passord")
-    public ResponseEntity<?> settPassord(
+    public ResponseEntity<Void> settPassord(
             @AuthenticationPrincipal UserDetails innlogget,
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {
         int kallerNiva = niva(innlogget);
-        return ansattRepo.findById(id).map(a -> {
-            if (a.getRolle().niva() >= kallerNiva) {
-                return ResponseEntity.status(403).<Void>build();
-            }
-            a.setPassordHash(passordKoder.encode(body.get("passord")));
-            ansattRepo.save(a);
-            return ResponseEntity.ok().<Void>build();
-        }).orElse(ResponseEntity.notFound().build());
+        var ansattOpt = ansattRepo.findById(id);
+        if (ansattOpt.isEmpty()) return ResponseEntity.<Void>status(404).build();
+        var a = ansattOpt.get();
+        if (a.getRolle().niva() >= kallerNiva) return ResponseEntity.<Void>status(403).build();
+        a.setPassordHash(passordKoder.encode(body.get("passord")));
+        ansattRepo.save(a);
+        return ResponseEntity.<Void>ok().build();
     }
 
     @Transactional
@@ -95,13 +94,12 @@ public class AnsattController {
             @AuthenticationPrincipal UserDetails innlogget,
             @PathVariable UUID id) {
         int kallerNiva = niva(innlogget);
-        return ansattRepo.findById(id).map(a -> {
-            if (a.getRolle().niva() >= kallerNiva) {
-                return ResponseEntity.status(403).<Void>build();
-            }
-            tildelingRepo.deleteAllByAnsattId(id);
-            ansattRepo.deleteById(id);
-            return ResponseEntity.<Void>noContent().build();
-        }).orElse(ResponseEntity.notFound().build());
+        var ansattOpt = ansattRepo.findById(id);
+        if (ansattOpt.isEmpty()) return ResponseEntity.<Void>status(404).build();
+        var a = ansattOpt.get();
+        if (a.getRolle().niva() >= kallerNiva) return ResponseEntity.<Void>status(403).build();
+        tildelingRepo.deleteAllByAnsattId(id);
+        ansattRepo.deleteById(id);
+        return ResponseEntity.<Void>noContent().build();
     }
 }
