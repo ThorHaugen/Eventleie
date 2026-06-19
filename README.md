@@ -50,7 +50,6 @@ Frontend starter på `http://localhost:5173`.
 
 ## Testbrukere
 
-Alle testbrukere har passord `passord`.
 
 | Brukernavn  | Navn               | Rolle    |
 |-------------|--------------------|----------|
