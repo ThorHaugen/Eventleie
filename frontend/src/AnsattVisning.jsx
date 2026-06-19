@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "./api";
+import { api, loggUt } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
 const STATUS_TEKST = {
@@ -14,7 +14,7 @@ const STATUS_FARGE = {
   FRAVAER: { color: "var(--warning)" },
 };
 
-export default function AnsattVisning({ brukernavn }) {
+export default function AnsattVisning({ brukernavn, ansattId }) {
   const [vakter, setVakter] = useState([]);
   const [laster, setLaster] = useState(true);
   const [feil, setFeil] = useState(null);
@@ -52,6 +52,8 @@ export default function AnsattVisning({ brukernavn }) {
 
   return (
     <div style={{ maxWidth: 500, margin: "0 auto", padding: 24 }}>
+
+      <PassordSeksjon />
 
       <section style={{ marginBottom: 36 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px", letterSpacing: 0.3 }}>
@@ -133,6 +135,56 @@ export default function AnsattVisning({ brukernavn }) {
   );
 }
 
+function PassordSeksjon() {
+  const [vis, setVis] = useState(false);
+  const [gammelt, setGammelt] = useState("");
+  const [nytt, setNytt] = useState("");
+  const [bekreft, setBekreft] = useState("");
+  const [lagrer, setLagrer] = useState(false);
+  const [feil, setFeil] = useState(null);
+  const [ok, setOk] = useState(false);
+
+  async function bytt(e) {
+    e.preventDefault();
+    if (nytt !== bekreft) { setFeil("Passordene er ikke like."); return; }
+    if (nytt.length < 6) { setFeil("Passordet må være minst 6 tegn."); return; }
+    setLagrer(true); setFeil(null);
+    try {
+      await api.endreEgetPassord(gammelt, nytt);
+      setGammelt(""); setNytt(""); setBekreft("");
+      setVis(false); setOk(true);
+      setTimeout(() => setOk(false), 4000);
+    } catch {
+      setFeil("Feil gammelt passord, eller noe gikk galt.");
+    } finally {
+      setLagrer(false);
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span className="tiny muted">Konto</span>
+        <button onClick={() => setVis(!vis)} className="tiny" style={{ fontSize: 12, padding: "4px 10px" }}>
+          {vis ? "Avbryt" : "Bytt passord"}
+        </button>
+      </div>
+      {ok && <p className="tiny" style={{ color: "var(--teal)", margin: "6px 0 0" }}>Passord oppdatert.</p>}
+      {vis && (
+        <form onSubmit={bytt} style={{ marginTop: 10, background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 14 }}>
+          <input type="password" placeholder="Gammelt passord" value={gammelt} onChange={(e) => setGammelt(e.target.value)} style={{ marginBottom: 8 }} />
+          <input type="password" placeholder="Nytt passord" value={nytt} onChange={(e) => setNytt(e.target.value)} style={{ marginBottom: 8 }} />
+          <input type="password" placeholder="Bekreft nytt passord" value={bekreft} onChange={(e) => setBekreft(e.target.value)} style={{ marginBottom: 10 }} />
+          {feil && <p style={{ color: "#a32d2d", fontSize: 12, margin: "0 0 8px" }}>{feil}</p>}
+          <button type="submit" className="primary" disabled={lagrer} style={{ width: "100%" }}>
+            {lagrer ? "Lagrer..." : "Oppdater passord"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function VaktKort({ o, laster, children }) {
   return (
     <div style={{
@@ -157,14 +209,28 @@ function VaktKort({ o, laster, children }) {
 
       <div style={{ fontWeight: 400, marginBottom: 6 }}>{o.kunde}</div>
 
-      <div className="tiny muted" style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+      <div className="tiny muted" style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: o.adresse ? 6 : 10 }}>
         {o.klokkeslett && <span>Oppmøte {visTid(o.klokkeslett)}</span>}
         {o.kjoretoy && <span>{o.kjoretoy}</span>}
         {o.sted && <span>{o.sted}</span>}
-        {o.mannskap?.length > 0 && (
-          <span>{o.mannskap.length} {o.mannskap.length === 1 ? "person" : "personer"} påmeldt</span>
-        )}
       </div>
+
+      {o.adresse && (
+        <div className="tiny" style={{ marginBottom: 8, color: "var(--info)" }}>
+          📍 {o.adresse}
+        </div>
+      )}
+
+      {o.mannskap?.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+          {o.mannskap.map((m) => (
+            <span key={m.id} style={{
+              fontSize: 11, padding: "2px 8px", borderRadius: 20,
+              background: "var(--border)", color: "var(--text-muted)",
+            }}>{m.navn}</span>
+          ))}
+        </div>
+      )}
 
       {o.notat && (
         <p className="tiny muted" style={{ margin: "0 0 10px" }}>{o.notat}</p>

@@ -48,6 +48,8 @@ export const api = {
   taVakt: (id) => kall(`/api/vakter/${id}/ta`, { method: "POST" }),
   trekkVakt: (id) => kall(`/api/vakter/${id}/ta`, { method: "DELETE" }),
 
+  endreEgetPassord: (gammelt, nytt) => kall("/api/meg/passord", { method: "PUT", body: JSON.stringify({ gammelt, nytt }) }),
+
   alleAnsatte: () => kall("/api/ansatte"),
   opprettAnsatt: (data) => kall("/api/ansatte", { method: "POST", body: JSON.stringify(data) }),
   slettAnsatt: (id) => kall(`/api/ansatte/${id}`, { method: "DELETE" }),

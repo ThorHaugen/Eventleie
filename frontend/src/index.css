@@ -18,7 +18,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
-button { font-family: inherit; font-size: 14px; cursor: pointer; border: 0.5px solid var(--border-strong); background: var(--surface); border-radius: var(--radius); padding: 8px 14px; transition: background .15s; }
+button { font-family: inherit; font-size: 14px; cursor: pointer; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: var(--radius); padding: 8px 14px; transition: background .15s; }
 button:hover { background: var(--bg); }
 button:active { transform: scale(0.98); }
 button.primary { background: var(--info); color: #fff; border-color: var(--info); }
