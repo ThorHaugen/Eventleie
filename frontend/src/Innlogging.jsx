@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { settInnlogging, api } from "./api";
+import { settInnlogging, loggUt, api } from "./api";
 
 export default function Innlogging({ onInnlogget }) {
   const [brukernavn, setBrukernavn] = useState("");
@@ -16,11 +16,13 @@ export default function Innlogging({ onInnlogget }) {
     try {
       await onInnlogget();
     } catch (err) {
-      if (err.status === 401 || err.status === 403) {
+      loggUt();
+      if (err?.status === 401 || err?.status === 403) {
         setFeil("Feil brukernavn eller passord.");
       } else {
-        setFeil("Fikk ikke kontakt med serveren. Kjører backend på port 8080?");
+        setFeil("Fikk ikke kontakt med serveren.");
       }
+    } finally {
       setLaster(false);
     }
   }
