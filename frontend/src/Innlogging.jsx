@@ -38,7 +38,7 @@ export default function Innlogging({ onInnlogget }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <form onSubmit={loggInn} style={{ width: "100%", maxWidth: 340, background: "var(--surface)", padding: "2rem", borderRadius: "var(--radius-lg)", border: "0.5px solid var(--border)" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 500, margin: "0 0 4px" }}>Eventleie</h1>
+        <img src="/logo.png" alt="Eventleie" style={{ height: 52, marginBottom: "1.2rem", display: "block" }} />
         <p className="muted tiny" style={{ margin: "0 0 1.5rem" }}>Mannskap og oppdrag</p>
 
         <label className="tiny muted">Brukernavn</label>

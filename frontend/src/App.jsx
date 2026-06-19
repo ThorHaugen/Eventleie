@@ -21,7 +21,7 @@ export default function App() {
   return (
     <div>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 24px", background: "var(--surface)", borderBottom: "0.5px solid var(--border)" }}>
-        <strong style={{ fontWeight: 500 }}>Eventleie</strong>
+        <img src="/logo.png" alt="Eventleie" style={{ height: 28 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span className="tiny muted">
             {bruker.brukernavn} · {bruker.rolle === "ADMIN" ? "Admin" : "Ansatt"}
