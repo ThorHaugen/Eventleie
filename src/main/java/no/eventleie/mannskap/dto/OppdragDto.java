@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class OppdragDto {
 
-    public record AnsattKort(UUID id, String navn, String status, String fravaerBegrunnelse) {
+    public record AnsattKort(UUID id, String navn, String telefon, String status, String fravaerBegrunnelse) {
     }
 
     public UUID id;
@@ -63,6 +63,7 @@ public class OppdragDto {
         return new AnsattKort(
                 t.getAnsatt().getId(),
                 t.getAnsatt().getNavn(),
+                t.getAnsatt().getTelefon(),
                 t.getStatus().name(),
                 t.getFravaerBegrunnelse());
     }

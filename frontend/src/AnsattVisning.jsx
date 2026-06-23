@@ -2,6 +2,27 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { TypePille, visDato, visTid } from "./felles";
 
+const MANEDER = ["januar","februar","mars","april","mai","juni","juli","august","september","oktober","november","desember"];
+
+function grupperPerManed(liste) {
+  const grupper = [];
+  let gjeldende = null;
+  for (const o of [...liste].sort((a, b) => a.dato.localeCompare(b.dato))) {
+    const maaned = o.dato.substring(0, 7);
+    if (maaned !== gjeldende) {
+      gjeldende = maaned;
+      grupper.push({ maaned, vakter: [] });
+    }
+    grupper[grupper.length - 1].vakter.push(o);
+  }
+  return grupper;
+}
+
+function maanedNavn(aarMaaned) {
+  const [aar, m] = aarMaaned.split("-");
+  return MANEDER[parseInt(m, 10) - 1] + " " + aar;
+}
+
 export default function AnsattVisning({ brukernavn }) {
   const [vakter, setVakter] = useState([]);
   const [laster, setLaster] = useState(true);
@@ -77,10 +98,15 @@ export default function AnsattVisning({ brukernavn }) {
           <Seksjon>
             {mineVakter.length === 0
               ? <TomMelding>Du har ikke tatt noen vakter enda.</TomMelding>
-              : mineVakter.map((o) => (
-                  <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]} minVakt>
-                    <VaktHandlinger o={o} lasterHandling={lasterHandling} handling={handling} />
-                  </VaktKort>
+              : grupperPerManed(mineVakter).map(({ maaned, vakter }) => (
+                  <div key={maaned}>
+                    <MaanedHeader tekst={maanedNavn(maaned)} />
+                    {vakter.map((o) => (
+                      <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]} minVakt>
+                        <VaktHandlinger o={o} lasterHandling={lasterHandling} handling={handling} />
+                      </VaktKort>
+                    ))}
+                  </div>
                 ))
             }
           </Seksjon>
@@ -88,25 +114,30 @@ export default function AnsattVisning({ brukernavn }) {
           <Seksjon>
             {ledigeVakter.length === 0
               ? <TomMelding>Ingen ledige vakter akkurat nå.</TomMelding>
-              : ledigeVakter.map((o) => {
-                  const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
-                  return (
-                    <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
-                      {erFull ? (
-                        <FullChip />
-                      ) : (
-                        <button
-                          className="primary"
-                          disabled={lasterHandling[o.id]}
-                          onClick={() => handling(o.id, () => api.taVakt(o.id))}
-                          style={{ flex: 1 }}
-                        >
-                          {lasterHandling[o.id] ? "..." : "Ta vakt"}
-                        </button>
-                      )}
-                    </VaktKort>
-                  );
-                })
+              : grupperPerManed(ledigeVakter).map(({ maaned, vakter }) => (
+                  <div key={maaned}>
+                    <MaanedHeader tekst={maanedNavn(maaned)} />
+                    {vakter.map((o) => {
+                      const erFull = o.maksAntall != null && o.mannskap.length >= o.maksAntall;
+                      return (
+                        <VaktKort key={o.id} o={o} laster={lasterHandling[o.id]}>
+                          {erFull ? (
+                            <FullChip />
+                          ) : (
+                            <button
+                              className="primary"
+                              disabled={lasterHandling[o.id]}
+                              onClick={() => handling(o.id, () => api.taVakt(o.id))}
+                              style={{ flex: 1 }}
+                            >
+                              {lasterHandling[o.id] ? "..." : "Ta vakt"}
+                            </button>
+                          )}
+                        </VaktKort>
+                      );
+                    })}
+                  </div>
+                ))
             }
           </Seksjon>
         )}
@@ -208,6 +239,12 @@ function VaktHandlinger({ o, lasterHandling, handling }) {
 }
 
 function VaktKort({ o, laster, children }) {
+  const [aktivtMannskap, setAktivtMannskap] = useState(null);
+
+  function toggleMannskap(m) {
+    setAktivtMannskap((prev) => (prev?.id === m.id ? null : m));
+  }
+
   return (
     <div style={{
       background: "var(--surface)",
@@ -237,18 +274,43 @@ function VaktKort({ o, laster, children }) {
       )}
 
       {o.mannskap?.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
-          {o.mannskap.map((m) => (
-            <span key={m.id} style={{
-              fontSize: 11, padding: "2px 9px", borderRadius: 20,
-              background: m.status === "FRAVAER" ? "var(--warning-bg)" : "var(--border)",
-              color: m.status === "FRAVAER" ? "var(--warning)" : "var(--text-muted)",
-            }}>{m.navn}</span>
-          ))}
-          {o.maksAntall && (
-            <span className="tiny muted" style={{ padding: "2px 0", alignSelf: "center" }}>
-              {o.mannskap.length}/{o.maksAntall}
-            </span>
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {o.mannskap.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => toggleMannskap(m)}
+                style={{
+                  fontSize: 11, padding: "2px 9px", borderRadius: 20, border: "none", cursor: "pointer",
+                  background: aktivtMannskap?.id === m.id
+                    ? "var(--info-bg)"
+                    : m.status === "FRAVAER" ? "var(--warning-bg)" : "var(--border)",
+                  color: aktivtMannskap?.id === m.id
+                    ? "var(--info)"
+                    : m.status === "FRAVAER" ? "var(--warning)" : "var(--text-muted)",
+                }}
+              >
+                {m.navn}
+              </button>
+            ))}
+            {o.maksAntall && (
+              <span className="tiny muted" style={{ padding: "2px 0", alignSelf: "center" }}>
+                {o.mannskap.length}/{o.maksAntall}
+              </span>
+            )}
+          </div>
+          {aktivtMannskap && (
+            <div style={{
+              marginTop: 8, padding: "8px 12px",
+              background: "var(--bg)", border: "0.5px solid var(--border)",
+              borderRadius: "var(--radius)", fontSize: 13,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 3 }}>{aktivtMannskap.navn}</div>
+              {aktivtMannskap.telefon
+                ? <a href={`tel:${aktivtMannskap.telefon}`} style={{ color: "var(--info)", textDecoration: "none" }}>📞 {aktivtMannskap.telefon}</a>
+                : <span style={{ color: "var(--text-muted)" }}>Ikke registrert telefon</span>
+              }
+            </div>
           )}
         </div>
       )}
@@ -272,6 +334,17 @@ function FullChip() {
     }}>
       Fullt
     </span>
+  );
+}
+
+function MaanedHeader({ tekst }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0 10px" }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
+        {tekst}
+      </span>
+      <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+    </div>
   );
 }
 
