@@ -240,6 +240,7 @@ function VaktHandlinger({ o, lasterHandling, handling }) {
 
 function VaktKort({ o, laster, children }) {
   const [aktivtMannskap, setAktivtMannskap] = useState(null);
+  const [visNotat, setVisNotat] = useState(false);
 
   function toggleMannskap(m) {
     setAktivtMannskap((prev) => (prev?.id === m.id ? null : m));
@@ -316,7 +317,20 @@ function VaktKort({ o, laster, children }) {
       )}
 
       {o.notat && (
-        <p className="tiny muted" style={{ margin: "0 0 10px", fontStyle: "italic" }}>{o.notat}</p>
+        <div style={{ marginBottom: 10 }}>
+          <button
+            onClick={() => setVisNotat((v) => !v)}
+            style={{
+              background: "none", border: "none", padding: 0,
+              fontSize: 12, color: "var(--info)", cursor: "pointer", fontWeight: 500,
+            }}
+          >
+            {visNotat ? "Skjul beskrivelse ↑" : "Se beskrivelse ↓"}
+          </button>
+          {visNotat && (
+            <p className="tiny muted" style={{ margin: "8px 0 0", fontStyle: "italic", whiteSpace: "pre-wrap" }}>{o.notat}</p>
+          )}
+        </div>
       )}
 
       <div style={{ display: "flex" }}>{children}</div>
