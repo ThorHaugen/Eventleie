@@ -1,5 +1,6 @@
 package no.eventleie.mannskap.controller;
 
+import no.eventleie.mannskap.model.Rolle;
 import no.eventleie.mannskap.repository.AnsattRepository;
 import no.eventleie.mannskap.repository.TildelingRepository;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,8 @@ public class MegController {
         String gammelt = body.get("gammelt");
         String nytt = body.get("nytt");
         return ansattRepo.findByBrukernavn(bruker.getUsername()).map(a -> {
-            if (!passordKoder.matches(gammelt, a.getPassordHash())) {
+            boolean erAdmin = a.getRolle() == Rolle.ADMIN || a.getRolle() == Rolle.SJEF || a.getRolle() == Rolle.UTVIKLER;
+            if (!erAdmin && !passordKoder.matches(gammelt, a.getPassordHash())) {
                 return ResponseEntity.status(403).body("Feil gammelt passord.");
             }
             a.setPassordHash(passordKoder.encode(nytt));

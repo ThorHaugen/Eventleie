@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { loggUt, lastLagretInnlogging, api } from "./api";
+import { loggUt, lastLagretInnlogging, settInnlogging, api } from "./api";
 import Innlogging from "./Innlogging";
 import AdminDashboard from "./AdminDashboard";
 import AnsattVisning from "./AnsattVisning";
@@ -209,6 +209,7 @@ function InnstillingerModal({ bruker, onLukk, onBrukernavnEndret }) {
     setLagrer(true); setFeil(null);
     try {
       await api.endrePassord(gammelt, nytt);
+      settInnlogging(bruker.brukernavn, nytt);
       setOk("Passord oppdatert.");
       setGammelt(""); setNytt(""); setBekreft("");
     } catch (err) {
