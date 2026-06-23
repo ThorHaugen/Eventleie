@@ -41,6 +41,11 @@ async function kall(sti, valg = {}) {
       ...(valg.headers || {}),
     },
   });
+  if (res.status === 401) {
+    const feil = new Error("Ikke tilgang");
+    feil.status = 401;
+    throw feil;
+  }
   if (!res.ok) {
     const tekst = await res.text().catch(() => "");
     const feil = new Error(tekst || `Feil ${res.status}`);
